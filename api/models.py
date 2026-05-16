@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db.models import PROTECT # importante para nao deletarmos informacoes importantes
-
+from django.contrib.auth.models import AbstractUser
 
 cpf_validator = RegexValidator(
     regex=r'^\d{11}$',
@@ -140,4 +140,11 @@ class Ocorrencia(models.Model):
 
     def __str__(self):
         return f"{self.titulo} ({self.id})"
-    
+
+
+class Atendente(AbstractUser):
+    cpf = models.CharField(max_length=11, validators=[cpf_validator], unique=True)
+    telefone = models.CharField(max_length=20, blank=True, null=True)
+
+    def __str__(self):
+        return f"Atendente: {self.username} (CPF: {self.cpf})"

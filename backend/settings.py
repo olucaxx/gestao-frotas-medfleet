@@ -26,6 +26,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 # Application definition
 
 INSTALLED_APPS = [
+    'api',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,7 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'api',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -116,3 +117,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
+
+AUTH_USER_MODEL = 'api.Atendente'
