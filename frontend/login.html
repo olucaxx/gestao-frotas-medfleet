@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - MedFleet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>MedFleet</h2>
+    <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin-top: -15px; margin-bottom: 25px;">Gestão Hospitalar & Frotas</p>
+
+    <form id="loginForm">
+      
+      <div class="input-group">
+        <label for="usuario">Usuário</label>
+        <input type="usuario" id="usuario" placeholder="nome de usuario" required>
+      </div>
+
+      <div class="input-group">
+        <label for="senha">Senha</label>
+        <div class="senha-box">
+          <input type="password" id="senha" placeholder="••••••••" required>
+          <button type="button" id="toggleSenha">👁</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login">Entrar</button>
+
+    </form>
+
+    <p id="erro"></p>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

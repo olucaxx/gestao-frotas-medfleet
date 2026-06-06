@@ -36,6 +36,7 @@ from .serializers import (
 class VeiculoViewSet(viewsets.ModelViewSet):
     queryset = Veiculo.objects.all()
     serializer_class = VeiculoSerializer
+    lookup_field = "placa"
 
 
 class FuncionarioViewSet(viewsets.ModelViewSet):

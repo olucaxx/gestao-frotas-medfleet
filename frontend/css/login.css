@@ -1,0 +1,167 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+body {
+  position: relative;
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background-color: #0a3d62;
+  background-image: url("../assets/background.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(10, 61, 98, 0.75),
+    rgba(10, 61, 98, 0.6)
+  );
+  z-index: 0;
+}
+
+
+.login-container {
+  counter-increment: center;
+  position: relative;
+  z-index: 1;
+
+  width: 380px;
+  padding: 40px 30px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+
+  text-align: center;
+  color: white;
+}
+
+
+.login-container h2 {
+  color: white;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  letter-spacing: -0.5px;
+}
+
+
+.input-group {
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+
+  background: rgba(255,255,255,0.12);
+  color: white;
+  font-size: 15px;
+
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+
+.input-group input::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+
+
+.input-group input:focus {
+  border-color: #ffffff;
+  background: rgba(255,255,255,0.18);
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+}
+
+
+.senha-box {
+  display: flex;
+}
+
+.senha-box input {
+  flex: 1;
+  border-radius: 8px 0 0 8px;
+}
+
+.senha-box button {
+  background: rgba(255,255,255,0.12);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-left: none;
+  padding: 0 16px;
+  cursor: pointer;
+  border-radius: 0 8px 8px 0;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.senha-box button:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+
+.btn-login {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px;
+
+  background: #3b82f6;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+
+  border: none;
+  border-radius: 8px;
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-login:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+}
+
+
+#erro {
+  color: #ff6b6b;
+  margin-top: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}

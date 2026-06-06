@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MedFleet - Gestão Hospitalar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <link rel="stylesheet" href="./css/global.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="./css/veiculos.css">
+  <link rel="stylesheet" href="./css/modals.css">
+
+  <link rel="icon" type="image/png" href="./assets/favicon.ico">
+</head>
+
+<body>
+
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <i class="ph ph-heartbeat"></i>
+        <h2>MedFleet</h2>
+      </div>
+      <nav class="sidebar-nav-main">
+        <a href="#" class="active" data-target="dashboardPage"><i class="ph ph-squares-four"></i> Dashboard</a>
+        <a href="#" data-target="ocorrenciasPage"><i class="ph ph-warning-circle"></i> Ocorrências</a>
+        <a href="#" data-target="funcionariosPage"><i class="ph ph-users-three"></i> Funcionários</a>
+        <a href="#" data-target="veiculosPage"><i class="ph ph-ambulance"></i> Veículos</a>
+        <a href="#" data-target="equipeMedicaPage"><i class="ph ph-users-four"></i> Equipe Médica</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="sidebar-bottom-toggle" id="sidebarBottomToggleBtn" type="button">
+          <span id="sidebarBottomToggleLabel">Mais Opções</span>
+          <i class="ph ph-caret-down" id="sidebarBottomToggleIcon"></i>
+        </button>
+        <div class="sidebar-bottom-content" id="sidebarBottomContent">
+          <div class="sidebar-bottom-item theme-toggle-item">
+            <i class="ph ph-moon"></i>
+            <span>Dark Mode</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="themeToggleSwitch" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <a href="#" class="sidebar-bottom-item" id="logoutLink">
+            <i class="ph ph-sign-out"></i>
+            <span>Logout</span>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+
+      
+      <header class="topbar">
+        <div class="topbar-search">
+          <i class="ph ph-magnifying-glass"></i>
+          <input type="text" placeholder="Buscar..." id="globalSearch">
+        </div>
+        <div class="topbar-right">
+
+          <div class="user-wrapper">
+            <div class="topbar-user">
+              <div class="topbar-avatar">
+                <i class="ph ph-user"></i>
+              </div>
+              <div class="topbar-user-info">
+                <span class="topbar-user-name">Admin</span>
+                <span class="topbar-user-role">Administrador</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section id="dashboardPage" class="page active">
+        <div class="welcome-banner">
+          <div>
+            <h1 class="welcome-title">Bem-vindo de volta, Admin 👋</h1>
+            <p class="welcome-subtitle">Aqui está o que acontece na sua frota hoje.</p>
+          </div>
+        </div>
+
+        <div class="cards">
+          
+          <div class="card">
+            <div class="card-left">
+              <div class="card-icon card-icon-red">
+                <i class="ph ph-warning-circle"></i>
+              </div>
+              <div class="card-info">
+                <p>Ocorrências Ativas</p>
+                <h2 id="totalOcorrencias">0</h2>
+              </div>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill fill-red" id="progressOcorrencias"></div>
+              </div>
+              <div class="progress-text" id="progressTextOcorrencias">0%</div>
+            </div>
+          </div>
+
+          
+          <div class="card">
+            <div class="card-left">
+              <div class="card-icon card-icon-blue">
+                <i class="ph ph-navigation-arrow"></i>
+              </div>
+              <div class="card-info">
+                <p>Veículos em Rota</p>
+                <h2 id="viaturasRota">0</h2>
+              </div>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill fill-blue" id="progressRota"></div>
+              </div>
+              <div class="progress-text" id="progressTextRota">0%</div>
+            </div>
+          </div>
+
+          
+          <div class="card">
+            <div class="card-left">
+              <div class="card-icon card-icon-green">
+                <i class="ph ph-users"></i>
+              </div>
+              <div class="card-info">
+                <p>Profissionais Disponíveis</p>
+                <h2 id="equipeDisponivel">0</h2>
+              </div>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill fill-green" id="progressEquipe"></div>
+              </div>
+              <div class="progress-text" id="progressTextEquipe">0%</div>
+            </div>
+          </div>
+
+          
+          <div class="card">
+            <div class="card-left">
+              <div class="card-icon card-icon-yellow">
+                <i class="ph ph-ambulance"></i>
+              </div>
+              <div class="card-info">
+                <p>Total de Veículos</p>
+                <h2 id="totalViaturas">0</h2>
+              </div>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill fill-yellow" id="progressFrota"></div>
+              </div>
+              <div class="progress-text" id="progressTextFrota">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          
+          <div class="dashboard-left">
+            <div class="alerts-panel">
+              <div class="panel-header">
+                <h3><i class="ph ph-bell"></i> Alertas Operacionais</h3>
+                <span class="pulse-dot"></span>
+              </div>
+              <ul id="alertList" class="alert-list"></ul>
+            </div>
+          </div>
+
+          
+          <div class="dashboard-right">
+            <div class="timeline-panel">
+              <div class="panel-header">
+                <h3><i class="ph ph-activity"></i> Linha do Tempo Operacional</h3>
+                <span class="live-badge">LIVE</span>
+              </div>
+              <div class="timeline-container" id="liveTimeline">
+                
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="veiculosPage" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Veículos Hospitalares</h1>
+            <p class="subtitle">Monitoramento e controle logístico em tempo real</p>
+          </div>
+          <button id="addVeiculoBtn" type="button"><i class="ph ph-plus-circle"></i> Adicionar Ambulância</button>
+        </div>
+        <div class="page-body">
+        
+        <div class="tracking-sidebar" id="veiculosSidebar">
+          <div id="veiculosList" class="tracking-grid"></div>
+        </div>
+
+        <div class="vehicle-details-panel hidden" id="veiculosDetail">
+          <div class="details-top-bar">
+            <button class="close-details-btn" onclick="fecharDetalhes('veiculos')">
+              <i class="ph ph-arrow-left"></i> Voltar para lista
+            </button>
+          </div>
+          <div class="details-header">
+            <div class="header-title">
+              <h2 id="detailPlate">AMB-1020</h2>
+              <span id="detailStatus" class="status-badge badge-route"><i class="ph ph-navigation-arrow"></i> Em rota</span>
+            </div>
+          </div>
+
+          <div class="details-content">
+             <div class="large-vehicle-image">
+               <img src="assets/ambulance.png" alt="Ambulância em foco" />
+             </div>
+
+             <div class="vehicle-info-grid">
+               <div class="info-box">
+                 <p>Marca / Modelo</p>
+                 <h4 id="detailModelo">-</h4>
+               </div>
+               <div class="info-box">
+                 <p>Categoria</p>
+                 <h4 id="detailCategoria">-</h4>
+               </div>
+               <div class="info-box">
+                 <p>Ano</p>
+                 <h4 id="detailAno">-</h4>
+               </div>
+               <div class="info-box">
+                 <p>Quilometragem (KM)</p>
+                 <h4 id="detailKm">-</h4>
+               </div>
+               <div class="info-box">
+                <p>CNH Necessária</p>
+                <h4 id="detailCnh">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Disponibilidade</p>
+                <h4 id="detailDisponibilidade">-</h4>
+              </div>
+             </div>
+
+             <div class="admin-actions">
+               <button class="btn-outline" id="btnEditVeiculo"><i class="ph ph-pencil-simple"></i> Editar Cadastro</button>
+               <button class="btn-outline-danger" id="btnDeleteVeiculo"><i class="ph ph-trash"></i> Remover Veículo</button>
+             </div>
+          </div>
+        </div>
+      </div>
+
+        
+        <div id="veiculoModal" class="modal-overlay hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3><i class="ph ph-ambulance"></i> Cadastrar Novo Veículo</h3>
+              <button class="close-modal-btn" id="closeVeiculoModal"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="modal-body form-grid">
+              <div class="form-group">
+                <label>Placa</label>
+                <input id="inputPlaca" placeholder="EX: ABC-1234" />
+              </div>
+
+              <div class="form-group">
+                <label>Marca</label>
+                <input id="inputMarca" placeholder="EX: Mercedes-Benz" />
+              </div>
+
+              <div class="form-group">
+                <label>Modelo</label>
+                <input id="inputModelo" placeholder="EX: Sprinter" />
+              </div>
+
+              <div class="form-group">
+                <label>Categoria</label>
+                <select id="inputCategoria">
+                  <option value="">Selecione...</option>
+                  <option value="AMBULANCIA">Ambulância</option>
+                  <option value="UTI_MOVEL">UTI Móvel</option>
+                  <option value="RESGATE">Resgate</option>
+                  <option value="APOIO">Apoio</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Ano de Fabricação</label>
+                <input id="inputAno" type="number" placeholder="2024" />
+              </div>
+
+              <div class="form-group">
+                <label>Quilometragem (KM)</label>
+                <input id="inputKm" type="number" placeholder="0" />
+              </div>
+
+              <div class="form-group">
+                <label>CNH Necessária</label>
+                <select id="inputCnh">
+                  <option value="">Selecione...</option>
+                  <option value="A">A</option>
+                  <option value="B">B</option>
+                  <option value="C">C</option>
+                  <option value="D">D</option>
+                  <option value="E">E</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Disponibilidade</label>
+                <select id="inputDisponibilidade">
+                  <option value="">Selecione...</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button id="cancelVeiculo" class="btn-outline-danger">Cancelar</button>
+              <button id="saveVeiculo" class="btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Veículo</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      
+      <section id="funcionariosPage" class="page">
+        <div class="page-header">
+          <div>
+            <h1 id="funcionariosPageTitle">Funcionários</h1>
+            <p class="subtitle" id="funcionariosPageSubtitle">Todos os profissionais vinculados à frota hospitalar</p>
+          </div>
+          <button id="addFuncionarioBtn" type="button"><i class="ph ph-plus-circle"></i> Adicionar Funcionário</button>
+        </div>
+
+        <div class="page-body">
+        
+        <div class="tracking-sidebar" id="funcionariosSidebar">
+          <div id="funcionariosList" class="tracking-grid"></div>
+        </div>
+        
+        <div class="vehicle-details-panel hidden" id="funcionariosDetail">
+          <div class="details-top-bar">
+            <button class="close-details-btn" onclick="fecharDetalhes('funcionarios')">
+              <i class="ph ph-arrow-left"></i> Voltar para lista
+            </button>
+          </div>
+          <div class="details-header">
+            <div class="header-title">
+              <h2 id="detailFuncNome">Selecione um Funcionário</h2>
+              <span id="detailFuncStatus" class="status-badge badge-available"><i class="ph ph-check-circle"></i> Disponível</span>
+            </div>
+          </div>
+
+          <div class="details-tabs">
+            <button class="tab active" data-tab="infoFuncionario">
+              Informações
+            </button>
+
+            <button class="tab" data-tab="docsFuncionario">
+              CNH
+            </button>
+
+            <button class="tab" data-tab="registroFuncionario">
+              Registro
+            </button>
+          </div>
+
+          <!-- informações -->
+          <div class="details-content tab-content active" id="infoFuncionario">
+
+            <div class="large-vehicle-image"
+                style="display:flex;justify-content:center;align-items:center;background:var(--bg-secondary);border-radius:12px;padding:2rem;">
+              <i class="ph ph-user-circle" style="font-size:120px;color:var(--text-muted);"></i>
+            </div>
+
+            <div class="vehicle-info-grid">
+
+              <div class="info-box">
+                <p>Nome</p>
+                <h4 id="detailFuncNome">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>CPF</p>
+                <h4 id="detailFuncCpf">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Data de Nascimento</p>
+                <h4 id="detailFuncNascimento">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Telefone</p>
+                <h4 id="detailFuncTelefone">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Email</p>
+                <h4 id="detailFuncEmail">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Disponibilidade</p>
+                <h4 id="detailFuncDisponibilidade">-</h4>
+              </div>
+
+            </div>
+
+            <div class="admin-actions">
+              <button class="btn-outline" id="btnEditFuncionario">
+                <i class="ph ph-pencil-simple"></i>
+                Editar Funcionário
+              </button>
+
+              <button class="btn-outline-danger" id="btnDeleteFuncionario">
+                <i class="ph ph-trash"></i>
+                Excluir Funcionário
+              </button>
+            </div>
+
+          </div>
+
+
+          <!-- cnh -->
+          <div class="details-content tab-content hidden" id="docsFuncionario">
+
+            <div class="vehicle-info-grid">
+
+              <div class="info-box">
+                <p>Número</p>
+                <h4 id="detailCnhNumero">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Categoria</p>
+                <h4 id="detailCnhCategoria">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Validade</p>
+                <h4 id="detailCnhValidade">-</h4>
+              </div>
+
+            </div>
+
+            <div class="admin-actions">
+              <button class="btn-outline" id="btnEditCnh">
+                <i class="ph ph-pencil-simple"></i>
+                Editar CNH
+              </button>
+
+              <button class="btn-outline-danger" id="btnDeleteCnh">
+                <i class="ph ph-trash"></i>
+                Excluir CNH
+              </button>
+            </div>
+
+          </div>
+
+
+          <!-- registro -->
+          <div class="details-content tab-content hidden" id="registroFuncionario">
+
+            <div class="vehicle-info-grid">
+
+              <div class="info-box">
+                <p>Cargo</p>
+                <h4 id="detailCargoNome">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Tipo de Registro</p>
+                <h4 id="detailTipoRegistro">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Número do Registro</p>
+                <h4 id="detailNumeroRegistro">-</h4>
+              </div>
+
+            </div>
+
+            <div class="admin-actions">
+              <button class="btn-outline" id="btnEditRegistro">
+                <i class="ph ph-pencil-simple"></i>
+                Editar Registro
+              </button>
+
+              <button class="btn-outline-danger" id="btnDeleteRegistro">
+                <i class="ph ph-trash"></i>
+                Excluir Registro
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="funcionarioModal" class="modal-overlay hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>
+                <i class="ph ph-users-three"></i>
+                Cadastrar Funcionário
+              </h3>
+              <button class="close-modal-btn" id="closeFuncionarioModal">
+                <i class="ph ph-x"></i>
+              </button>
+            </div>
+
+            <div class="modal-body form-grid">
+
+              <div class="form-group full-width">
+                <label>Nome Completo</label>
+                <input
+                  id="inputFuncNome"
+                  placeholder="EX: João da Silva"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>CPF</label>
+                <input
+                  id="inputFuncCpf"
+                  placeholder="EX: 000.000.000-00"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Data de Nascimento</label>
+                <input
+                  id="inputFuncNascimento"
+                  type="date"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Telefone</label>
+                <input
+                  id="inputFuncTelefone"
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div class="form-group full-width">
+                <label>Email</label>
+                <input
+                  id="inputFuncEmail"
+                  type="email"
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Disponibilidade</label>
+                <select id="inputFuncDisponibilidade">
+                  <option value="">
+                    Selecione...
+                  </option>
+                </select>
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+              <button
+                id="cancelFuncionario"
+                class="btn-outline-danger"
+              >
+                Cancelar
+              </button>
+
+              <button
+                id="saveFuncionario"
+                class="btn-primary"
+              >
+                <i class="ph ph-floppy-disk"></i>
+                Salvar Funcionário
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="cnhModal" class="modal-overlay hidden">
+
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h3>
+                <i class="ph ph-identification-card"></i>
+                CNH
+              </h3>
+
+              <button class="close-modal-btn" id="closeCnhModal">
+                <i class="ph ph-x"></i>
+              </button>
+            </div>
+
+            <div class="modal-body form-grid">
+
+              <div class="form-group">
+                <label>Número</label>
+                <input id="inputCnhNumero">
+              </div>
+
+              <div class="form-group">
+                <label>Categoria</label>
+                <select id="inputCnhCategoria">
+
+                  <option value="">Selecione...</option>
+                  <option>A</option>
+                  <option>B</option>
+                  <option>C</option>
+                  <option>D</option>
+                  <option>E</option>
+
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Validade</label>
+                <input id="inputCnhValidade" type="date">
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+              <button id="cancelCnh" class="btn-outline-danger">
+                Cancelar
+              </button>
+
+              <button id="saveCnh" class="btn-primary">
+                Salvar CNH
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
+        <div id="registroModal" class="modal-overlay hidden">
+
+          <div class="modal-content">
+
+            <div class="modal-header">
+              <h3>
+                <i class="ph ph-certificate"></i>
+                Registro Profissional
+              </h3>
+            </div>
+
+            <div class="modal-body form-grid">
+
+              <div class="form-group">
+                <label>Cargo</label>
+
+                <select id="inputCargoRegistro">
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Tipo de Registro</label>
+                <input id="tipoRegistroLabel" disabled>
+            </div>
+
+              <div class="form-group">
+                <label>Número do Registro</label>
+
+                <input id="inputNumeroRegistro">
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+              <button id="cancelRegistro"
+                      class="btn-outline-danger">
+                Cancelar
+              </button>
+
+              <button id="saveRegistro"
+                      class="btn-primary">
+                Salvar Registro
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      
+      <section id="ocorrenciasPage" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Gestão de Ocorrências</h1>
+            <p class="subtitle">Abertura e acompanhamento de emergências e solicitações</p>
+          </div>
+          <button id="addOcorrenciaBtn" type="button"><i class="ph ph-plus-circle"></i> Nova Ocorrência</button>
+        </div>
+
+        <div class="page-body">
+        
+        <div class="tracking-sidebar" id="ocorrenciasSidebar">
+          <div class="pill-filters">
+            <p>Filtrar Status:</p>
+            <div class="pill-group">
+              <button class="pill active">Todas <span class="badge" id="badgeTotalOcorrencias">0</span></button>
+              <button class="pill">Ativa</button>
+              <button class="pill">Em Atend.</button>
+              <button class="pill">Finalizada</button>
+            </div>
+          </div>
+          <div id="ocorrenciasList" class="tracking-grid"></div>
+        </div>
+
+        
+        <div class="vehicle-details-panel hidden" id="ocorrenciasDetail">
+          <div class="details-top-bar">
+            <button class="close-details-btn" onclick="fecharDetalhes('ocorrencias')">
+              <i class="ph ph-arrow-left"></i> Voltar para lista
+            </button>
+          </div>
+          <div class="details-header">
+            <div class="header-title">
+              <h2 id="detailOcorrenciaTitulo">Selecione uma Ocorrência</h2>
+              <span id="detailOcorrenciaStatus" class="status-badge badge-emergency"><i class="ph ph-warning-circle"></i> Pendente</span>
+            </div>
+            <div class="header-actions">
+              <button class="btn-outline-primary" id="btnResolverOcorrencia"><i class="ph ph-check-circle"></i> Finalizar</button>
+            </div>
+          </div>
+
+          <div class="details-tabs">
+            <button class="tab active">Detalhes da Ocorrência</button>
+          </div>
+
+          <div class="details-content">
+             <div class="large-vehicle-image" style="display: flex; justify-content: center; align-items: center; background: var(--bg-secondary); border-radius: 12px; padding: 2rem;">
+               <i class="ph ph-warning-circle" style="font-size: 80px; color: var(--status-emergency);"></i>
+             </div>
+
+             <div class="vehicle-info-grid">
+               <div class="info-box">
+                 <p>Prioridade</p>
+                 <h4 id="detailOcorrenciaPrioridade">-</h4>
+               </div>
+               <div class="info-box">
+                 <p>Data</p>
+                 <h4 id="detailOcorrenciaData">-</h4>
+               </div>
+               <div class="info-box full-width">
+                 <p>Paciente / Solicitante</p>
+                 <h4 id="detailOcorrenciaPaciente">-</h4>
+               </div>
+               <div class="info-box full-width">
+                 <p>Endereço / Localização</p>
+                 <h4 id="detailOcorrenciaEndereco">-</h4>
+               </div>
+               <div class="info-box">
+                 <p>Viatura</p>
+                 <h4 id="detailOcorrenciaVeiculo">-</h4>
+               </div>
+               <div class="info-box">
+                 <p>Equipe / Motorista</p>
+                 <h4 id="detailOcorrenciaEquipe">-</h4>
+               </div>
+               <div class="info-box full-width">
+                 <p>Descrição</p>
+                 <p id="detailOcorrenciaDescricao" style="margin-top: 8px; line-height: 1.6; color: var(--text);">-</p>
+               </div>
+             </div>
+
+             <div class="admin-actions" style="margin-top: 30px;">
+               <button class="btn-outline" id="btnEditOcorrencia"><i class="ph ph-pencil-simple"></i> Editar Ocorrência</button>
+               <button class="btn-outline-danger" id="btnDeleteOcorrencia"><i class="ph ph-trash"></i> Remover</button>
+             </div>
+          </div>
+        </div>
+      </div>
+
+        
+        <div id="ocorrenciaModal" class="modal-overlay hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3><i class="ph ph-warning-circle"></i> Nova Ocorrência</h3>
+              <button class="close-modal-btn" id="closeOcorrenciaModal"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="modal-body form-grid">
+              <div class="form-group full-width">
+                <label>Título / Tipo</label>
+                <input id="inputOcorrenciaTitulo" placeholder="EX: Mal súbito, Acidente de trânsito..." />
+              </div>
+
+              <div class="form-group">
+                <label>Paciente / Solicitante</label>
+                <input id="inputOcorrenciaPaciente" placeholder="Nome se aplicável" />
+              </div>
+
+              <div class="form-group">
+                <label>Prioridade</label>
+                <select id="inputOcorrenciaPrioridade">
+                  <option value="Baixa">Baixa (Rotina)</option>
+                  <option value="Média">Média (Urgência)</option>
+                  <option value="Alta">Alta (Emergência)</option>
+                  <option value="Crítica">Crítica (Risco de Vida)</option>
+                </select>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Endereço</label>
+                <input id="inputOcorrenciaEndereco" placeholder="Endereço da ocorrência..." />
+              </div>
+
+              <div class="form-group">
+                <label>Status</label>
+                <select id="inputOcorrenciaStatus">
+                  <option value="Ativa">Ativa</option>
+                  <option value="Em Atendimento">Em Atendimento</option>
+                  <option value="Finalizada">Finalizada</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Viatura Despachada (Opcional)</label>
+                <select id="inputOcorrenciaVeiculo">
+                  <option value="">Selecione a viatura...</option>
+                </select>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Equipe / Motorista (Opcional)</label>
+                <select id="inputOcorrenciaEquipe">
+                  <option value="">Selecione a equipe ou profissional...</option>
+                </select>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Descrição Detalhada</label>
+                <textarea id="inputOcorrenciaDescricao" rows="4"
+                  placeholder="Descreva os sintomas, situação do local, etc..."
+                  style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: 'Inter', sans-serif; resize: vertical;"></textarea>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button id="cancelOcorrencia" class="btn-outline-danger">Cancelar</button>
+              <button id="saveOcorrencia" class="btn-primary"><i class="ph ph-paper-plane-right"></i> Salvar
+                Ocorrência</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="manutencoesPage" class="page">
+        <h1>Manutenções</h1>
+        <input id="searchManutencoes" class="search-input" placeholder="Buscar por veículo ou data" />
+
+        <button id="addManutencaoBtn" type="button">+ Nova Manutenção</button>
+
+        <div id="manutencoesList" class="page-inner"></div>
+
+        <div id="manutencaoForm" class="hidden form-panel">
+          <h3>Cadastrar Manutenção</h3>
+
+          <label>Veículo</label>
+          <select id="inputVeiculoManut">
+            <option value="">Selecione a viatura...</option>
+          </select>
+
+          <label>Data</label>
+          <input id="inputDataManut" type="date" placeholder="Selecione a data" />
+
+          <label>Status</label>
+          <input id="inputStatusManut" placeholder="Status" />
+
+          <div class="form-actions">
+            <button id="saveManutencao" type="button">Salvar</button>
+            <button id="cancelManutencao" type="button">Cancelar</button>
+          </div>
+        </div>
+      </section>
+
+      
+      <section id="abastecimentosPage" class="page">
+        <h1>Abastecimentos</h1>
+        <input id="searchAbastecimentos" class="search-input" placeholder="Buscar por veículo, posto ou data" />
+
+        <button id="addAbastecimentoBtn" type="button">+ Novo Abastecimento</button>
+
+        <div id="abastecimentosList" class="page-inner"></div>
+
+        <div id="abastecimentoForm" class="hidden form-panel">
+          <h3>Cadastrar Abastecimento</h3>
+
+          <label>Veículo</label>
+          <select id="inputVeiculoAbast">
+            <option value="">Selecione a viatura...</option>
+          </select>
+
+          <label>Data</label>
+          <input id="inputDataAbast" type="date" placeholder="Selecione a data" />
+
+          <label for="combustivel">Tipo de Combustível</label>
+          <select id="combustivel" name="combustivel" required>
+            <option value="">Selecione</option>
+            <option value="etanol">Etanol</option>
+            <option value="gasolina">Gasolina</option>
+            <option value="alcool">Álcool</option>
+            <option value="diesel">Diesel</option>
+          </select>
+
+          <label>Nome do Posto</label>
+          <input id="inputPosto" placeholder="Posto de combustível" />
+
+          <label>Litros</label>
+          <input id="inputLitros" type="number" step="0.01" placeholder="Litros" />
+
+          <label>Valor</label>
+          <input id="inputValor" type="number" step="0.01" placeholder="Valor" />
+
+          <div class="form-actions">
+            <button id="saveAbastecimento" type="button">Salvar</button>
+            <button id="cancelAbastecimento" type="button">Cancelar</button>
+          </div>
+        </div>
+      </section>
+
+      
+      <section id="equipeMedicaPage" class="page">
+        <div class="page-header">
+          <div>
+            <h1>Formação de Equipes Médicas</h1>
+            <p class="subtitle">Montagem e controle de equipes temporárias de saúde</p>
+          </div>
+          <button id="addEquipeBtn" type="button"><i class="ph ph-plus-circle"></i> Nova Equipe</button>
+        </div>
+
+        <div class="page-body">
+          
+          <div class="tracking-sidebar" id="equipeMedicaSidebar">
+            <div id="equipeMedicaList" class="tracking-grid"></div>
+          </div>
+
+          
+          <div class="vehicle-details-panel hidden" id="equipeMedicaDetail">
+            <div class="details-top-bar">
+              <button class="close-details-btn" onclick="fecharDetalhes('equipeMedica')">
+                <i class="ph ph-arrow-left"></i> Voltar para lista
+              </button>
+            </div>
+            <div class="details-header">
+              <div class="header-title">
+                <h2 id="detailEquipeNome">Selecione uma Equipe</h2>
+                <span id="detailEquipeStatus" class="status-badge badge-available"><i class="ph ph-users"></i> Ativa</span>
+              </div>
+            </div>
+
+            <div class="details-tabs">
+              <button class="tab active">Informações da Equipe</button>
+            </div>
+
+            <div class="details-content">
+              <div class="large-vehicle-image" style="display: flex; justify-content: center; align-items: center; background: var(--bg-secondary); border-radius: 12px; padding: 2rem;">
+                <i class="ph ph-users-three" style="font-size: 100px; color: var(--text-muted);"></i>
+              </div>
+
+              <div class="vehicle-info-grid">
+                <div class="info-box">
+                  <p>Data / Período</p>
+                  <h4 id="detailEquipeData">-</h4>
+                </div>
+                <div class="info-box">
+                  <p>Turno</p>
+                  <h4 id="detailEquipeTurno">-</h4>
+                </div>
+                <div class="info-box full-width">
+                  <p>Profissionais da Equipe</p>
+                  <div id="detailEquipeMembrosList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                    
+                  </div>
+                </div>
+                <div class="info-box full-width">
+                  <p>Observações</p>
+                  <p id="detailEquipeObs" style="margin-top: 8px; line-height: 1.6; color: var(--text);">-</p>
+                </div>
+              </div>
+
+              <div class="admin-actions">
+                <button class="btn-outline" id="btnEditEquipe"><i class="ph ph-pencil-simple"></i> Editar Equipe</button>
+                <button class="btn-outline-danger" id="btnDeleteEquipe"><i class="ph ph-trash"></i> Remover Equipe</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        
+        <div id="equipeMedicaModal" class="modal-overlay hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3><i class="ph ph-users-four"></i> Formar Equipe Médica</h3>
+              <button class="close-modal-btn" id="closeEquipeMedicaModal"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="modal-body form-grid">
+              <div class="form-group full-width">
+                <label>Nome da Equipe</label>
+                <input id="inputEquipeNome" placeholder="EX: Equipe de Plantão - Sábado" />
+              </div>
+
+              <div class="form-group">
+                <label>Data</label>
+                <input id="inputEquipeData" type="date" />
+              </div>
+
+              <div class="form-group">
+                <label>Turno</label>
+                <select id="inputEquipeTurno">
+                  <option value="Manhã">Manhã</option>
+                  <option value="Tarde">Tarde</option>
+                  <option value="Noite">Noite</option>
+                  <option value="Integral">Integral</option>
+                </select>
+              </div>
+
+              
+              <div class="form-group full-width">
+                <label>Adicionar Membro à Equipe</label>
+                <select id="inputEquipeMembroBuscar">
+                  <option value="">Selecione um profissional para adicionar...</option>
+                </select>
+              </div>
+
+              
+              <div class="form-group full-width">
+                <label>Profissionais Selecionados</label>
+                <div id="equipeMembrosChipsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 46px; padding: 10px; border: 1px dashed var(--border); border-radius: 12px; background: var(--bg-card);">
+                  <span style="color: var(--text-muted); font-size: 13px;">Nenhum profissional selecionado</span>
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label>Observações / Notas</label>
+                <textarea id="inputEquipeObs" rows="3" placeholder="Informações adicionais sobre o plantão ou equipe..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: 'Inter', sans-serif; resize: vertical;"></textarea>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button id="cancelEquipeMedica" class="btn-outline-danger">Cancelar</button>
+              <button id="saveEquipeMedica" class="btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Equipe</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      
+
+
+    </main>
+  </div>
+
+  <script src="./js/main.js"></script>
+  <script src="./js/dashboard.js"></script>
+  <script src="./js/veiculos.js"></script>
+  <script src="./js/funcionarios.js"></script>
+  <script src="./js/ocorrencias.js"></script>
+  <script src="./js/equipe_medica.js"></script>
+
+  <div id="toastContainer" class="toast-container"></div>
+</body>
+
+</html>

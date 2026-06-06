@@ -105,8 +105,15 @@ class ProfissionalSaude(models.Model):
 class Equipe(models.Model):
     nome_equipe = models.CharField(max_length=50)
     
-    condutor = models.ForeignKey(Funcionario, on_delete=PROTECT, blank=True)
-    profissionais = models.ManyToManyField(ProfissionalSaude, blank=True)
+    condutor = models.ForeignKey(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='equipes_como_condutor'
+    )
+    profissionais = models.ManyToManyField(
+        Funcionario,
+        related_name='equipes_como_profissional'
+    )
     
     veiculo = models.ForeignKey(Veiculo, on_delete=PROTECT)
     disponibilidade = models.ForeignKey(Disponibilidade, on_delete=PROTECT)

@@ -97,7 +97,7 @@ class ProfissionalSaudeSerializer(serializers.ModelSerializer):
 
 class EquipeSerializer(serializers.ModelSerializer):
     profissionais = serializers.PrimaryKeyRelatedField(
-        queryset=ProfissionalSaude.objects.all(),
+        queryset=Funcionario.objects.all(),
         many=True
     )
 
@@ -178,7 +178,7 @@ class EquipeSerializer(serializers.ModelSerializer):
 
             if equipes_prof.exists():
                 raise serializers.ValidationError(
-                    f"profissional '{prof.funcionario.nome}' ja pertence a outra equipe"
+                    f"profissional '{prof.nome}' ja pertence a outra equipe"
                 )
 
         return data
