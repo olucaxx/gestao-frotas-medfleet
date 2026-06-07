@@ -13,7 +13,9 @@ from .models import (
     Status,
     Paciente,
     Disponibilidade,
-    Atendente
+    Atendente,
+    Manutencao,
+    Abastecimento
 )
 
 from .serializers import (
@@ -29,7 +31,9 @@ from .serializers import (
     StatusSerializer,
     PacienteSerializer,
     DisponibilidadeSerializer,
-    AtendenteSerializer
+    AtendenteSerializer,
+    ManutencaoSerializer,
+    AbastecimentoSerializer
 )
 
 
@@ -127,3 +131,11 @@ class DisponibilidadeViewSet(viewsets.ModelViewSet):
 class AtendenteViewSet(viewsets.ModelViewSet):
     queryset = Atendente.objects.all()
     serializer_class = AtendenteSerializer
+    
+class ManutencaoViewSet(viewsets.ModelViewSet):
+    queryset = Manutencao.objects.select_related("veiculo")
+    serializer_class = ManutencaoSerializer
+
+class AbastecimentoViewSet(viewsets.ModelViewSet):
+    queryset = Abastecimento.objects.select_related("veiculo")
+    serializer_class = AbastecimentoSerializer

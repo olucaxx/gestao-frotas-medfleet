@@ -18,6 +18,8 @@ router.register(r'tipos-registro', TipoRegistroViewSet)
 router.register(r'prioridades', PrioridadeViewSet)
 router.register(r'status', StatusViewSet)
 router.register(r'disponibilidades', DisponibilidadeViewSet)
+router.register(r'manutencoes', ManutencaoViewSet)
+router.register(r'abastecimentos', AbastecimentoViewSet)
 
 urlpatterns = router.urls + [
     path('api/token/', obtain_auth_token),

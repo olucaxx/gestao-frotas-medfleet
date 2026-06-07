@@ -15,7 +15,9 @@ from .models import (
     Status,
     Paciente,
     Disponibilidade,
-    Atendente
+    Atendente,
+    Manutencao,
+    Abastecimento
 )
 
 
@@ -114,7 +116,7 @@ class EquipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "equipe precisa de pelo menos 1 profissional"
             )
-    
+
         if condutor not in profissionais:
             raise serializers.ValidationError(
                 "condutor deve fazer parte dos profissionais"
@@ -148,30 +150,18 @@ class EquipeSerializer(serializers.ModelSerializer):
                 "categoria da cnh incompativel"
             )
 
-        equipes_veiculo = Equipe.objects.filter(
-            veiculo=veiculo
-        )
-
+        equipes_veiculo = Equipe.objects.filter(veiculo=veiculo)
         if self.instance:
-            equipes_veiculo = equipes_veiculo.exclude(
-                id=self.instance.id
-            )
-
+            equipes_veiculo = equipes_veiculo.exclude(id=self.instance.id)
         if equipes_veiculo.exists():
             raise serializers.ValidationError(
                 "veiculo ja pertence a outra equipe"
             )
 
         for prof in profissionais:
-            equipes_prof = Equipe.objects.filter(
-                profissionais=prof
-            )
-
+            equipes_prof = Equipe.objects.filter(profissionais=prof)
             if self.instance:
-                equipes_prof = equipes_prof.exclude(
-                    id=self.instance.id
-                )
-
+                equipes_prof = equipes_prof.exclude(id=self.instance.id)
             if equipes_prof.exists():
                 raise serializers.ValidationError(
                     f"profissional '{prof.nome}' ja pertence a outra equipe"
@@ -182,63 +172,38 @@ class EquipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         profissionais = validated_data.pop('profissionais')
 
+        equipe = Equipe.objects.create(**validated_data)
         equipe.profissionais.set(profissionais)
 
-        indisponivel = Disponibilidade.objects.get(
-            codigo="INDISPONIVEL"
-        )
+        disp_indisponivel = Disponibilidade.objects.get(codigo="INDISPONIVEL")
 
         for prof in profissionais:
-            prof.disponibilidade = indisponivel
+            prof.disponibilidade = disp_indisponivel
             prof.save()
-            
-        equipe = Equipe.objects.create(**validated_data)
 
         return equipe
 
     def update(self, instance, validated_data):
-        novos_profissionais = validated_data.pop(
-            'profissionais',
-            None
-        )
+        novos_profissionais = validated_data.pop('profissionais', None)
 
         equipe = super().update(instance, validated_data)
 
         if novos_profissionais is not None:
-            disp_disponivel = Disponibilidade.objects.get(
-                nome="DISPONIVEL"
-            )
+            disp_disponivel = Disponibilidade.objects.get(codigo="DISPONIVEL")
+            disp_indisponivel = Disponibilidade.objects.get(codigo="INDISPONIVEL")
 
-            indisponivel = Disponibilidade.objects.get(
-                nome="INDISPONIVEL"
-            )
+            antigos = set(instance.profissionais.all())
+            novos = set(novos_profissionais)
 
-            antigos = set(
-                instance.profissionais.all()
-            )
+            for prof in antigos - novos:
+                prof.disponibilidade = disp_disponivel
+                prof.save()
 
-            novos = set(
-                novos_profissionais
-            )
+            for prof in novos - antigos:
+                prof.disponibilidade = disp_indisponivel
+                prof.save()
 
-            removidos = antigos - novos
-            adicionados = novos - antigos
-
-            for prof in removidos:
-                funcionario = prof.funcionario
-
-                funcionario.disponibilidade = disp_disponivel
-                funcionario.save()
-
-            for prof in adicionados:
-                funcionario = prof.funcionario
-
-                funcionario.disponibilidade = indisponivel
-                funcionario.save()
-
-            equipe.profissionais.set(
-                novos_profissionais
-            )
+            equipe.profissionais.set(novos_profissionais)
 
         return equipe
 
@@ -266,36 +231,19 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        validated_data['created_by'] = (
-            self.context['request'].user
-        )
-
+        validated_data['created_by'] = self.context['request'].user
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        validated_data['updated_by'] = (
-            self.context['request'].user
-        )
+        validated_data['updated_by'] = self.context['request'].user
 
-        novo_status = validated_data.get(
-            'status',
-            instance.status
-        )
+        novo_status = validated_data.get('status', instance.status)
+        nova_equipe = validated_data.get('equipe', instance.equipe)
 
-        nova_equipe = validated_data.get(
-            'equipe',
-            instance.equipe
-        )
+        disp_em_rota = Disponibilidade.objects.get(codigo="EM_ROTA")
+        disp_disponivel = Disponibilidade.objects.get(codigo="DISPONIVEL")
 
-        disp_atendendo = Disponibilidade.objects.get(
-            nome="ATENDENDO"
-        )
-
-        disp_disponivel = Disponibilidade.objects.get(
-            nome="DISPONIVEL"
-        )
-
-        if instance.status.nome == "FINALIZADO":
+        if instance.status.codigo == "FINALIZADO":
             raise serializers.ValidationError(
                 "ocorrencia finalizada nao pode ser alterada"
             )
@@ -311,43 +259,33 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
         )
 
         if atribuindo_equipe:
-            if nova_equipe.disponibilidade.nome != "DISPONIVEL":
+            if nova_equipe.disponibilidade.codigo != "DISPONIVEL":
                 raise serializers.ValidationError(
                     "equipe nao disponivel"
                 )
 
-            nova_equipe.disponibilidade = disp_atendendo
+            nova_equipe.disponibilidade = disp_em_rota
             nova_equipe.save()
 
-            nova_equipe.veiculo.disponibilidade = disp_atendendo
+            nova_equipe.veiculo.disponibilidade = disp_em_rota
             nova_equipe.veiculo.save()
 
-        instance = super().update(
-            instance,
-            validated_data
-        )
+        instance = super().update(instance, validated_data)
 
         if atribuindo_equipe:
             instance.condutor = nova_equipe.condutor
-
             instance.veiculo = nova_equipe.veiculo
-
             instance.save()
-
-            instance.profissionais.set(
-                nova_equipe.profissionais.all()
-            )
+            instance.profissionais.set(nova_equipe.profissionais.all())
 
         if (
-            instance.status.nome != "FINALIZADO" and
-            novo_status.nome == "FINALIZADO"
+            instance.status.codigo != "FINALIZADO" and
+            novo_status.codigo == "FINALIZADO"
         ):
             if instance.equipe:
                 equipe = instance.equipe
-
                 equipe.disponibilidade = disp_disponivel
                 equipe.save()
-
                 equipe.veiculo.disponibilidade = disp_disponivel
                 equipe.veiculo.save()
 
@@ -363,10 +301,19 @@ class AtendenteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password')
-
         user = Atendente(**validated_data)
         user.set_password(password)
         user.save()
-
         return user
-    
+
+
+class ManutencaoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Manutencao
+        fields = '__all__'
+
+
+class AbastecimentoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Abastecimento
+        fields = '__all__'

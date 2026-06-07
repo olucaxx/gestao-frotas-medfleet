@@ -231,3 +231,25 @@ class Ocorrencia(models.Model):
 
     def __str__(self):
         return f"{self.titulo} ({self.id})"
+    
+class Manutencao(models.Model):
+    veiculo = models.ForeignKey(Veiculo, on_delete=models.PROTECT, related_name="manutencoes")
+    data = models.DateField()
+    descricao = models.TextField(blank=True, null=True)
+    custo = models.DecimalField(max_digits=10, decimal_places=2)
+    oficina = models.CharField(max_length=150, blank=True, null=True)
+
+    def __str__(self):
+        return f"Manutenção - {self.veiculo.placa} - {self.descricao} ({self.id})"
+
+
+class Abastecimento(models.Model):
+    veiculo = models.ForeignKey(Veiculo, on_delete=models.PROTECT, related_name="abastecimentos")
+    data = models.DateField()
+    quantidade_litros = models.DecimalField(max_digits=6, decimal_places=2)
+    custo_total = models.DecimalField(max_digits=10, decimal_places=2)
+    tipo_combustivel = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f"Abastecimento - {self.veiculo.placa} - {self.data} ({self.id})" 
+    
