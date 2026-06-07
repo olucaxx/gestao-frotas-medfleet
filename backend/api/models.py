@@ -45,16 +45,6 @@ class Veiculo(models.Model):
         return self.placa
 
 
-class Paciente(models.Model):
-    nome = models.CharField(max_length=100)
-    data_nascimento = models.DateField(blank=True, null=True)
-    cpf = models.CharField(max_length=11, blank=True, null=True, unique=True)
-    telefone = models.CharField(max_length=20, blank=True, null=True)
-
-    def __str__(self):
-        return self.nome
-
-
 class Funcionario(models.Model):
     matricula = models.BigAutoField(primary_key=True)
     cpf = models.CharField(max_length=11,unique=True)
@@ -205,11 +195,16 @@ class Ocorrencia(models.Model):
         blank=True
     )
 
-    paciente = models.ForeignKey(
-        Paciente,
-        on_delete=PROTECT,
-        null=True,
-        blank=True
+    nome_paciente = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    telefone_paciente = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

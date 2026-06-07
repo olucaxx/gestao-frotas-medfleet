@@ -11,7 +11,6 @@ from .models import (
     TipoRegistro,
     Prioridade,
     Status,
-    Paciente,
     Disponibilidade,
     Atendente,
     Manutencao,
@@ -29,7 +28,6 @@ from .serializers import (
     TipoRegistroSerializer,
     PrioridadeSerializer,
     StatusSerializer,
-    PacienteSerializer,
     DisponibilidadeSerializer,
     AtendenteSerializer,
     ManutencaoSerializer,
@@ -88,17 +86,11 @@ class OcorrenciaViewSet(viewsets.ModelViewSet):
         "equipe",
         "condutor",
         "veiculo",
-        "paciente"
     ).prefetch_related(
         "profissionais"
     )
 
     serializer_class = OcorrenciaSerializer
-
-
-class PacienteViewSet(viewsets.ModelViewSet):
-    queryset = Paciente.objects.all()
-    serializer_class = PacienteSerializer
 
 
 class CargoViewSet(viewsets.ModelViewSet):

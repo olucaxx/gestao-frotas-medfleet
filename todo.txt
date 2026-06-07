@@ -1,0 +1,7 @@
+arrumar badges no css, pegar pelo codigo e tal
+
+ajustar card da ocorrencia para ficar igual ao js antigo
+
+mostrar em uma tab separada sobre a equipe do chamado
+tela principal somente informações do chamado
+pode deixar o paciente e telefone em branco inicialmente

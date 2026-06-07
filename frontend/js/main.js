@@ -20,7 +20,6 @@ window.fazerRequisicao = fazerRequisicao;
 let funcionarioEditandoId = null;
 let manutencaoEditandoId = null;
 let abastecimentoEditandoId = null;
-let ocorrenciaEditandoId = null;
 let currentFuncionarioFilter = null;
 
 let veiculosCache = [];
@@ -31,6 +30,9 @@ let ocorrenciasCache = [
 ];
 
 let equipesCache = [];
+let prioridadesCache = [];
+let statusCache = [];
+let equipeMedicaCache = [];
 
 // Gerenciamento de Cliques no Menu Lateral
 document.querySelectorAll(".sidebar-nav-main a, .sidebar-submenu a").forEach(link => {

@@ -13,7 +13,6 @@ from .models import (
     Cargo,
     Prioridade,
     Status,
-    Paciente,
     Disponibilidade,
     Atendente,
     Manutencao,
@@ -66,12 +65,6 @@ class StatusSerializer(serializers.ModelSerializer):
 class DisponibilidadeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Disponibilidade
-        fields = '__all__'
-
-
-class PacienteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Paciente
         fields = '__all__'
 
 
@@ -212,6 +205,10 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ocorrencia
         fields = '__all__'
+        read_only_fields = [
+            "created_by",
+            "updated_by"
+        ]
 
     def validate(self, data):
         hc = data.get('horario_chamado')

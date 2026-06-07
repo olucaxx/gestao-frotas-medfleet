@@ -765,10 +765,15 @@
                  <p>Data</p>
                  <h4 id="detailOcorrenciaData">-</h4>
                </div>
-               <div class="info-box full-width">
-                 <p>Paciente / Solicitante</p>
-                 <h4 id="detailOcorrenciaPaciente">-</h4>
-               </div>
+               <div class="info-box">
+                  <p>Nome do Paciente</p>
+                  <h4 id="detailOcorrenciaPacienteNome">-</h4>
+                </div>
+
+                <div class="info-box">
+                  <p>Telefone</p>
+                  <h4 id="detailOcorrenciaPacienteTelefone">-</h4>
+                </div>
                <div class="info-box full-width">
                  <p>Endereço / Localização</p>
                  <h4 id="detailOcorrenciaEndereco">-</h4>
@@ -817,10 +822,6 @@
               <div class="form-group">
                 <label>Prioridade</label>
                 <select id="inputOcorrenciaPrioridade">
-                  <option value="Baixa">Baixa (Rotina)</option>
-                  <option value="Média">Média (Urgência)</option>
-                  <option value="Alta">Alta (Emergência)</option>
-                  <option value="Crítica">Crítica (Risco de Vida)</option>
                 </select>
               </div>
 
@@ -832,17 +833,15 @@
               <div class="form-group">
                 <label>Status</label>
                 <select id="inputOcorrenciaStatus">
-                  <option value="Ativa">Ativa</option>
-                  <option value="Em Atendimento">Em Atendimento</option>
-                  <option value="Finalizada">Finalizada</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label>Viatura Despachada (Opcional)</label>
-                <select id="inputOcorrenciaVeiculo">
-                  <option value="">Selecione a viatura...</option>
-                </select>
+                <label>Horário do Chamado</label>
+                <input
+                  type="datetime-local"
+                  id="inputOcorrenciaHorarioChamado"
+                />
               </div>
 
               <div class="form-group full-width">

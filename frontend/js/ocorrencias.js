@@ -1,172 +1,442 @@
-let ocorrenciaSelecionadaId = null;
+let ocorrenciaSelecionada = null;
+let ocorrenciaEditandoId = null;
 
-function carregarOcorrencias() {
-  const lista = document.getElementById("ocorrenciasList");
-  if (!lista) return;
-  lista.innerHTML = "";
+async function carregarOcorrencias() {
+    try {
+        const response = await fazerRequisicao("/ocorrencias/");
 
-  const badgeTotal = document.getElementById("badgeTotalOcorrencias");
-  if (badgeTotal) badgeTotal.textContent = ocorrenciasCache.length;
+        if (!response.ok) {
+            throw new Error("erro ao carregar ocorrências");
+        }
 
-  ocorrenciasCache.forEach(o => {
-    const cartao = document.createElement("div");
-    cartao.className = "tracking-card";
-    cartao.dataset.id = o.id;
-    cartao.classList.toggle("selected", o.id === ocorrenciaSelecionadaId);
+        ocorrenciasCache = await response.json();
 
-    const statusConfig = {
-      "Ativa": { classe: "badge-emergency", icone: "ph-warning-circle" },
-      "Em Atendimento": { classe: "badge-route", icone: "ph-clock" },
-      "Finalizada": { classe: "badge-available", icone: "ph-check-circle" }
-    };
+        renderizarOcorrencias();
 
-    const config = statusConfig[o.status] || statusConfig["Finalizada"];
+    } catch (erro) {
+        console.error("erro ao carregar ocorrências", erro);
+    }
+}
 
-    cartao.innerHTML = `
-      <div class="tc-header">
-        <h3 style="font-size: 14px;">${o.titulo.substring(0, 20)}...</h3>
-        <span class="status-badge ${config.classe}">
-          <i class="ph ${config.icone}"></i> ${o.status}
-        </span>
-      </div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">
-        <i class="ph ph-calendar"></i> ${o.data} | Prioridade: ${o.prioridade}
-      </div>
-    `;
+async function carregarPrioridades() {
+    const r =
+        await fazerRequisicao(
+            "/prioridades/"
+        );
 
-    cartao.onclick = () => selecionarOcorrencia(o.id);
-    lista.appendChild(cartao);
-  });
+    prioridadesCache =
+        await r.json();
+}
 
-  fecharDetalhes('ocorrencias');
+async function carregarStatus() {
+    const r =
+        await fazerRequisicao(
+            "/status/"
+        );
+
+    statusCache =
+        await r.json();
+}
+
+function renderizarOcorrencias() {
+
+    const lista = document.getElementById("ocorrenciasList");
+
+    if (!lista) return;
+
+    lista.innerHTML = "";
+
+    document.getElementById("badgeTotalOcorrencias").textContent =
+        ocorrenciasCache.length;
+
+    ocorrenciasCache.forEach(ocorrencia => {
+
+        const prioridade =
+            prioridadesCache?.find(
+                p => p.id === ocorrencia.prioridade
+            );
+
+        const status =
+            statusCache?.find(
+                s => s.id === ocorrencia.status
+            );
+
+        const card = document.createElement("div");
+
+        card.className = "tracking-card";
+
+        card.innerHTML = `
+            <h4>${ocorrencia.titulo ?? "-"}</h4>
+            <p>${ocorrencia.nome_paciente ?? "-"}</p>
+            <small>${prioridade?.nome ?? "-"}</small>
+            <br>
+            <small>${status?.nome ?? "-"}</small>
+        `;
+
+        card.onclick = () =>
+            selecionarOcorrencia(ocorrencia.id);
+
+        lista.appendChild(card);
+    });
 }
 
 function selecionarOcorrencia(id) {
-  ocorrenciaSelecionadaId = id;
-  const o = ocorrenciasCache.find(oc => oc.id === id);
-  if (!o) return;
 
-  document.querySelectorAll("#ocorrenciasList .tracking-card").forEach(cartao => {
-    cartao.classList.toggle("selected", Number(cartao.dataset.id) === Number(id));
-  });
+    const ocorrencia =
+        ocorrenciasCache.find(
+            o => o.id === id
+        );
 
-  const el = idDoc => document.getElementById(idDoc);
-  if (el("detailOcorrenciaTitulo")) el("detailOcorrenciaTitulo").textContent = o.titulo || 'Sem Título';
-  
-  if (el("detailOcorrenciaStatus")) {
-    const statusConfig = {
-      "Ativa": { classe: "badge-emergency", icone: "ph-warning-circle" },
-      "Em Atendimento": { classe: "badge-route", icone: "ph-clock" },
-      "Finalizada": { classe: "badge-available", icone: "ph-check-circle" }
-    };
-    const config = statusConfig[o.status] || statusConfig["Finalizada"];
-    el("detailOcorrenciaStatus").className = `status-badge ${config.classe}`;
-    el("detailOcorrenciaStatus").innerHTML = `<i class="ph ${config.icone}"></i> ${o.status}`;
-  }
-  
-  if (el("detailOcorrenciaPrioridade")) el("detailOcorrenciaPrioridade").textContent = o.prioridade || '-';
-  if (el("detailOcorrenciaData")) el("detailOcorrenciaData").textContent = o.data || '-';
-  if (el("detailOcorrenciaPaciente")) el("detailOcorrenciaPaciente").textContent = o.paciente || '-';
-  if (el("detailOcorrenciaEndereco")) el("detailOcorrenciaEndereco").textContent = o.endereco || '-';
-  if (el("detailOcorrenciaVeiculo")) el("detailOcorrenciaVeiculo").textContent = o.veiculo_nome || 'Não vinculado';
-  if (el("detailOcorrenciaEquipe")) el("detailOcorrenciaEquipe").textContent = o.equipe_nome || 'Não vinculado';
-  if (el("detailOcorrenciaDescricao")) el("detailOcorrenciaDescricao").textContent = o.descricao || '-';
+    if (!ocorrencia) return;
 
-  if (el("btnEditOcorrencia")) el("btnEditOcorrencia").onclick = () => editarOcorrencia(o.id);
-  if (el("btnDeleteOcorrencia")) {
-    el("btnDeleteOcorrencia").onclick = () => {
-      if (confirm(`Tem certeza que deseja remover a ocorrência "${o.titulo}"?`)) {
-        deletarOcorrencia(o.id);
-      }
-    };
-  }
+    ocorrenciaSelecionada = ocorrencia;
 
-  const btnResolver = el("btnResolverOcorrencia");
-  if (btnResolver) {
-    btnResolver.onclick = () => {
-      o.status = "Finalizada";
-      carregarOcorrencias();
-    };
-  }
+    const prioridade =
+        prioridadesCache?.find(
+            p => p.id === ocorrencia.prioridade
+        );
 
-  mostrarDetalhes('ocorrencias');
+    const status =
+        statusCache?.find(
+            s => s.id === ocorrencia.status
+        );
+
+    const equipe =
+        equipesCache?.find(
+            e => e.id === ocorrencia.equipe
+        );
+
+    document.getElementById("detailOcorrenciaTitulo").textContent =
+        ocorrencia.titulo ?? "-";
+
+    document.getElementById("detailOcorrenciaStatus").textContent =
+        status?.nome ?? "-";
+
+    document.getElementById("detailOcorrenciaPrioridade").textContent =
+        prioridade?.nome ?? "-";
+
+    document.getElementById("detailOcorrenciaData").textContent =
+        ocorrencia.created_at ?? "-";
+
+    document.getElementById("detailOcorrenciaEndereco").textContent =
+        ocorrencia.local_informado ?? "-";
+
+    document.getElementById("detailOcorrenciaDescricao").textContent =
+        ocorrencia.observacoes ?? "-";
+
+    if (
+        document.getElementById(
+            "detailOcorrenciaPacienteNome"
+        )
+    ) {
+        document.getElementById(
+            "detailOcorrenciaPacienteNome"
+        ).textContent =
+            ocorrencia.nome_paciente ?? "-";
+    }
+
+    if (
+        document.getElementById(
+            "detailOcorrenciaPacienteTelefone"
+        )
+    ) {
+        document.getElementById(
+            "detailOcorrenciaPacienteTelefone"
+        ).textContent =
+            ocorrencia.telefone_paciente ?? "-";
+    }
+
+    document.getElementById("detailOcorrenciaEquipe").textContent =
+        equipe?.nome_equipe ?? "-";
+
+    document.getElementById("ocorrenciasSidebar")
+        .classList.add("hidden");
+
+    document.getElementById("ocorrenciasDetail")
+        .classList.remove("hidden");
 }
 
-document.getElementById("addOcorrenciaBtn").onclick = () => {
-  ocorrenciaEditandoId = null;
-  limparFormularioOcorrencia();
-  document.getElementById("saveOcorrencia").innerHTML = '<i class="ph ph-paper-plane-right"></i> Salvar Ocorrência';
-  document.getElementById("ocorrenciaModal").classList.remove("hidden");
-};
+function preencherSelectPrioridades() {
+
+    const select =
+        document.getElementById(
+            "inputOcorrenciaPrioridade"
+        );
+
+    if (!select) return;
+
+    select.innerHTML =
+        `<option value="">Selecione</option>`;
+
+    prioridadesCache.forEach(item => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = item.id;
+        option.textContent = item.nome;
+
+        select.appendChild(option);
+    });
+}
+
+function preencherSelectStatus() {
+
+    const select =
+        document.getElementById(
+            "inputOcorrenciaStatus"
+        );
+
+    if (!select) return;
+
+    select.innerHTML =
+        `<option value="">Selecione</option>`;
+
+    statusCache.forEach(item => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = item.id;
+        option.textContent = item.nome;
+
+        select.appendChild(option);
+    });
+}
+
+function preencherSelectEquipes() {
+
+    const select =
+        document.getElementById(
+            "inputOcorrenciaEquipe"
+        );
+
+    if (!select) return;
+
+    select.innerHTML =
+        `<option value="">Selecione</option>`;
+
+    equipesCache.forEach(item => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = item.id;
+        option.textContent =
+            item.nome_equipe;
+
+        select.appendChild(option);
+    });
+}
 
 function limparFormularioOcorrencia() {
-  ["inputOcorrenciaTitulo", "inputOcorrenciaPaciente", "inputOcorrenciaPrioridade", "inputOcorrenciaEndereco", "inputOcorrenciaStatus", "inputOcorrenciaVeiculo", "inputOcorrenciaEquipe", "inputOcorrenciaDescricao"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.value = (el.tagName === "SELECT") ? el.options[0].value : "";
-      el.dataset.id = "";
+
+    ocorrenciaEditandoId = null;
+
+    document.getElementById(
+        "inputOcorrenciaTitulo"
+    ).value = "";
+
+    document.getElementById(
+        "inputOcorrenciaPaciente"
+    ).value = "";
+
+    document.getElementById(
+        "inputOcorrenciaEndereco"
+    ).value = "";
+
+    document.getElementById(
+        "inputOcorrenciaDescricao"
+    ).value = "";
+}
+
+async function salvarOcorrencia() {
+
+    try {
+
+        const payload = {
+
+            titulo:
+                document.getElementById(
+                    "inputOcorrenciaTitulo"
+                ).value,
+
+            nome_paciente:
+                document.getElementById(
+                    "inputOcorrenciaPaciente"
+                ).value,
+
+            local_informado:
+                document.getElementById(
+                    "inputOcorrenciaEndereco"
+                ).value,
+
+            horario_chamado:
+                document.getElementById(
+                    "inputOcorrenciaHorarioChamado"
+                ).value,
+
+            observacoes:
+                document.getElementById(
+                    "inputOcorrenciaDescricao"
+                ).value,
+
+            prioridade: Number(
+                document.getElementById(
+                    "inputOcorrenciaPrioridade"
+                ).value
+            ),
+
+            status: Number(
+                document.getElementById(
+                    "inputOcorrenciaStatus"
+                ).value
+            )
+        };
+
+        const equipe =
+            document.getElementById(
+                "inputOcorrenciaEquipe"
+            ).value;
+
+        if (equipe) {
+            payload.equipe =
+                Number(equipe);
+        }
+
+        let response;
+
+        if (ocorrenciaEditandoId) {
+
+            response =
+                await fazerRequisicao(
+                    `/ocorrencias/${ocorrenciaEditandoId}/`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
+
+        } else {
+
+            response =
+                await fazerRequisicao(
+                    "/ocorrencias/",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify(payload)
+                    }
+                );
+        }
+
+        if (!response.ok) {
+            console.error(
+                await response.text()
+            );
+            return;
+        }
+
+        await carregarOcorrencias();
+
+    } catch (erro) {
+
+        console.error(erro);
     }
-  });
-  document.getElementById("ocorrenciaModal").classList.add("hidden");
 }
 
-document.getElementById("cancelOcorrencia").onclick = limparFormularioOcorrencia;
-const btnFecharModalOcorrencia = document.getElementById("closeOcorrenciaModal");
-if (btnFecharModalOcorrencia) btnFecharModalOcorrencia.onclick = limparFormularioOcorrencia;
+async function excluirOcorrencia(id) {
 
-document.getElementById("saveOcorrencia").onclick = () => {
-  const dados = {
-    titulo: obterValorInput("inputOcorrenciaTitulo"),
-    paciente: obterValorInput("inputOcorrenciaPaciente"),
-    prioridade: obterValorInput("inputOcorrenciaPrioridade"),
-    endereco: obterValorInput("inputOcorrenciaEndereco"),
-    status: obterValorInput("inputOcorrenciaStatus"),
-    veiculo_nome: obterValorInput("inputOcorrenciaVeiculo"),
-    equipe_nome: obterValorInput("inputOcorrenciaEquipe"),
-    descricao: obterValorInput("inputOcorrenciaDescricao"),
-    data: new Date().toISOString().split('T')[0]
-  };
+    try {
 
-  if (ocorrenciaEditandoId) {
-    const idx = ocorrenciasCache.findIndex(o => o.id == ocorrenciaEditandoId);
-    if (idx > -1) {
-      ocorrenciasCache[idx] = { ...ocorrenciasCache[idx], ...dados, data: ocorrenciasCache[idx].data };
+        await fazerRequisicao(
+            `/ocorrencias/${id}/`,
+            {
+                method: "DELETE"
+            }
+        );
+
+        await carregarOcorrencias();
+
+    } catch (erro) {
+
+        console.error(erro);
     }
-  } else {
-    const novoId = ocorrenciasCache.length > 0 ? Math.max(...ocorrenciasCache.map(o => o.id)) + 1 : 1;
-    ocorrenciasCache.push({ id: novoId, ...dados });
-    ocorrenciaSelecionadaId = novoId;
-  }
-
-  limparFormularioOcorrencia();
-  carregarOcorrencias();
-};
-
-function editarOcorrencia(id) {
-  const o = ocorrenciasCache.find(oc => oc.id == id);
-  if (!o) return;
-
-  const campoVal = (idCampo, valor) => {
-    const el = document.getElementById(idCampo);
-    if (el) el.value = valor || "";
-  };
-
-  campoVal("inputOcorrenciaTitulo", o.titulo);
-  campoVal("inputOcorrenciaPaciente", o.paciente);
-  campoVal("inputOcorrenciaPrioridade", o.prioridade || "Baixa");
-  campoVal("inputOcorrenciaEndereco", o.endereco);
-  campoVal("inputOcorrenciaStatus", o.status || "Ativa");
-  campoVal("inputOcorrenciaVeiculo", o.veiculo_nome);
-  campoVal("inputOcorrenciaEquipe", o.equipe_nome);
-  campoVal("inputOcorrenciaDescricao", o.descricao);
-
-  ocorrenciaEditandoId = id;
-  document.getElementById("saveOcorrencia").innerHTML = '<i class="ph ph-pencil-simple"></i> Atualizar Ocorrência';
-  document.getElementById("ocorrenciaModal").classList.remove("hidden");
 }
 
-function deletarOcorrencia(id) {
-  ocorrenciasCache = ocorrenciasCache.filter(o => o.id != id);
-  if (ocorrenciaSelecionadaId == id) ocorrenciaSelecionadaId = null;
-  carregarOcorrencias();
-}
+document
+.getElementById("saveOcorrencia")
+?.addEventListener(
+    "click",
+    salvarOcorrencia
+);
+
+document
+.getElementById(
+    "btnDeleteOcorrencia"
+)
+?.addEventListener(
+    "click",
+    () => {
+
+        if (
+            !ocorrenciaSelecionada
+        ) return;
+
+        excluirOcorrencia(
+            ocorrenciaSelecionada.id
+        );
+    }
+);
+
+document
+    .getElementById("addOcorrenciaBtn")
+    ?.addEventListener("click", () => {
+
+        limparFormularioOcorrencia();
+
+        document
+            .getElementById("ocorrenciaModal")
+            ?.classList.remove("hidden");
+    });
+
+document
+    .getElementById("closeOcorrenciaModal")
+    ?.addEventListener("click", () => {
+
+        document
+            .getElementById("ocorrenciaModal")
+            ?.classList.add("hidden");
+    });
+
+document
+    .getElementById("cancelOcorrencia")
+    ?.addEventListener("click", () => {
+
+        document
+            .getElementById("ocorrenciaModal")
+            ?.classList.add("hidden");
+    });
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+    await carregarFuncionarios();
+    await carregarEquipes();
+    await carregarVeiculos();
+
+    await carregarPrioridades();
+    await carregarStatus();
+
+    await carregarOcorrencias();
+
+    preencherSelectPrioridades();
+    preencherSelectStatus();
+    preencherSelectEquipes();
+});
