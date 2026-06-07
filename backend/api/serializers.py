@@ -114,12 +114,8 @@ class EquipeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "equipe precisa de pelo menos 1 profissional"
             )
-
-        profissionais_funcionarios = [
-            prof.funcionario for prof in profissionais
-        ]
-
-        if condutor not in profissionais_funcionarios:
+    
+        if condutor not in profissionais:
             raise serializers.ValidationError(
                 "condutor deve fazer parte dos profissionais"
             )
@@ -191,14 +187,12 @@ class EquipeSerializer(serializers.ModelSerializer):
         equipe.profissionais.set(profissionais)
 
         disp_ocupado = Disponibilidade.objects.get(
-            nome="OCUPADO"
+            codigo="OCUPADO"
         )
 
         for prof in profissionais:
-            funcionario = prof.funcionario
-
-            funcionario.disponibilidade = disp_ocupado
-            funcionario.save()
+            prof.disponibilidade = disp_ocupado
+            prof.save()
 
         return equipe
 

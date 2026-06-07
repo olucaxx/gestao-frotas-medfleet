@@ -2,7 +2,7 @@ let funcionarioSelecionadoId = null;
 let cnhEditandoId = null;
 let registroEditandoId = null;
 
-const ENDPOINTS = {
+const ENDPOINTS_FUNCIONARIO = {
   funcionarios: "/funcionarios/",
   cnhs: "/cnhs/",
   profissionaisSaude: "/profissionais-saude/",
@@ -68,7 +68,7 @@ function getTipoRegistroDoCargo(cargo) {
 
 async function carregarCacheFuncionarios() {
   try {
-    const resposta = await fazerRequisicao(ENDPOINTS.funcionarios);
+    const resposta = await fazerRequisicao(ENDPOINTS_FUNCIONARIO.funcionarios);
     if (!resposta.ok) throw new Error("API falhou");
     funcionariosCache = await resposta.json();
   } catch (erro) {
@@ -78,7 +78,7 @@ async function carregarCacheFuncionarios() {
 
 async function carregarCacheCnhs() {
   try {
-    const resposta = await fazerRequisicao(ENDPOINTS.cnhs);
+    const resposta = await fazerRequisicao(ENDPOINTS_FUNCIONARIO.cnhs);
     if (!resposta.ok) throw new Error("API falhou");
     cnhsCache = await resposta.json();
   } catch (erro) {
@@ -88,7 +88,7 @@ async function carregarCacheCnhs() {
 
 async function carregarCacheProfissionaisSaude() {
   try {
-    const resposta = await fazerRequisicao(ENDPOINTS.profissionaisSaude);
+    const resposta = await fazerRequisicao(ENDPOINTS_FUNCIONARIO.profissionaisSaude);
     if (!resposta.ok) throw new Error("API falhou");
     profissionaisSaudeCache = await resposta.json();
   } catch (erro) {
@@ -98,7 +98,7 @@ async function carregarCacheProfissionaisSaude() {
 
 async function carregarCacheCargos() {
   try {
-    const resposta = await fazerRequisicao(ENDPOINTS.cargos);
+    const resposta = await fazerRequisicao(ENDPOINTS_FUNCIONARIO.cargos);
     if (!resposta.ok) throw new Error("API falhou");
     cargosCache = await resposta.json();
   } catch (erro) {
@@ -108,7 +108,7 @@ async function carregarCacheCargos() {
 
 async function carregarCacheTiposRegistro() {
   try {
-    const resposta = await fazerRequisicao(ENDPOINTS.tiposRegistro);
+    const resposta = await fazerRequisicao(ENDPOINTS_FUNCIONARIO.tiposRegistro);
     if (!resposta.ok) throw new Error("API falhou");
     tiposRegistroCache = await resposta.json();
   } catch (erro) {
@@ -356,8 +356,8 @@ async function salvarFuncionario() {
   console.log(normalizarValorInput("inputFuncDisponibilidade"));
 
   const caminho = funcionarioEditandoId
-    ? `${ENDPOINTS.funcionarios}${funcionarioEditandoId}/`
-    : ENDPOINTS.funcionarios;
+    ? `${ENDPOINTS_FUNCIONARIO.funcionarios}${funcionarioEditandoId}/`
+    : ENDPOINTS_FUNCIONARIO.funcionarios;
 
   const metodo = funcionarioEditandoId ? "PUT" : "POST";
 
@@ -379,7 +379,7 @@ async function salvarFuncionario() {
 }
 
 async function deletarFuncionario(matricula) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS.funcionarios}${matricula}/`, { method: "DELETE" });
+  const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.funcionarios}${matricula}/`, { method: "DELETE" });
   if (!resposta.ok) throw new Error("Erro ao excluir funcionário");
 
   if (num(funcionarioSelecionadoId) === num(matricula)) funcionarioSelecionadoId = null;
@@ -448,7 +448,7 @@ async function salvarCnh() {
     validade: normalizarValorInput("inputCnhValidade")
   };
 
-  const caminho = cnhEditandoId ? `${ENDPOINTS.cnhs}${cnhEditandoId}/` : ENDPOINTS.cnhs;
+  const caminho = cnhEditandoId ? `${ENDPOINTS_FUNCIONARIO.cnhs}${cnhEditandoId}/` : ENDPOINTS_FUNCIONARIO.cnhs;
   const metodo = cnhEditandoId ? "PUT" : "POST";
 
   const resposta = await fazerRequisicao(caminho, {
@@ -469,7 +469,7 @@ async function salvarCnh() {
 }
 
 async function deletarCnh(cnhId) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS.cnhs}${cnhId}/`, { method: "DELETE" });
+  const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.cnhs}${cnhId}/`, { method: "DELETE" });
   if (!resposta.ok) throw new Error("Erro ao excluir CNH");
 
   cnhEditandoId = null;
@@ -579,8 +579,8 @@ async function salvarProfissionalSaude() {
   };
 
   const url = registroEditandoId
-    ? `${ENDPOINTS.profissionaisSaude}${registroEditandoId}/`
-    : ENDPOINTS.profissionaisSaude;
+    ? `${ENDPOINTS_FUNCIONARIO.profissionaisSaude}${registroEditandoId}/`
+    : ENDPOINTS_FUNCIONARIO.profissionaisSaude;
 
   const metodo = registroEditandoId ? "PUT" : "POST";
 
@@ -610,7 +610,7 @@ async function salvarProfissionalSaude() {
 }
 
 async function deletarProfissionalSaude(profissionalId) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS.profissionaisSaude}/${profissionalId}`, { method: "DELETE" });
+  const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.profissionaisSaude}/${profissionalId}`, { method: "DELETE" });
   if (!resposta.ok) throw new Error("Erro ao excluir registro profissional");
 
   registroEditandoId = null;

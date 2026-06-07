@@ -984,22 +984,23 @@
 
               <div class="vehicle-info-grid">
                 <div class="info-box">
-                  <p>Data / Período</p>
-                  <h4 id="detailEquipeData">-</h4>
+                  <p>Condutor</p>
+                  <h4 id="detailEquipeCondutor">-</h4>
                 </div>
+
                 <div class="info-box">
-                  <p>Turno</p>
-                  <h4 id="detailEquipeTurno">-</h4>
+                  <p>Veículo</p>
+                  <h4 id="detailEquipeVeiculo">-</h4>
                 </div>
+
+                <div class="info-box">
+                  <p>Disponibilidade</p>
+                  <h4 id="detailEquipeDisponibilidade">-</h4>
+                </div>
+
                 <div class="info-box full-width">
                   <p>Profissionais da Equipe</p>
-                  <div id="detailEquipeMembrosList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                    
-                  </div>
-                </div>
-                <div class="info-box full-width">
-                  <p>Observações</p>
-                  <p id="detailEquipeObs" style="margin-top: 8px; line-height: 1.6; color: var(--text);">-</p>
+                  <div id="detailEquipeMembrosList" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;"></div>
                 </div>
               </div>
 
@@ -1016,49 +1017,50 @@
           <div class="modal-content">
             <div class="modal-header">
               <h3><i class="ph ph-users-four"></i> Formar Equipe Médica</h3>
-              <button class="close-modal-btn" id="closeEquipeMedicaModal"><i class="ph ph-x"></i></button>
+              <button class="close-modal-btn" id="closeEquipeMedicaModal">
+                <i class="ph ph-x"></i>
+              </button>
             </div>
 
             <div class="modal-body form-grid">
               <div class="form-group full-width">
                 <label>Nome da Equipe</label>
-                <input id="inputEquipeNome" placeholder="EX: Equipe de Plantão - Sábado" />
+                <input id="inputEquipeNome" placeholder="ex: equipe alfa" />
               </div>
 
               <div class="form-group">
-                <label>Data</label>
-                <input id="inputEquipeData" type="date" />
-              </div>
-
-              <div class="form-group">
-                <label>Turno</label>
-                <select id="inputEquipeTurno">
-                  <option value="Manhã">Manhã</option>
-                  <option value="Tarde">Tarde</option>
-                  <option value="Noite">Noite</option>
-                  <option value="Integral">Integral</option>
+                <label>Condutor</label>
+                <select id="inputEquipeCondutor">
+                  <option value="">selecione...</option>
                 </select>
               </div>
 
-              
+              <div class="form-group">
+                <label>Veículo</label>
+                <select id="inputEquipeVeiculo">
+                  <option value="">selecione...</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Disponibilidade</label>
+                <select id="inputEquipeDisponibilidade">
+                  <option value="">selecione...</option>
+                </select>
+              </div>
+
               <div class="form-group full-width">
-                <label>Adicionar Membro à Equipe</label>
+                <label>Adicionar Profissional</label>
                 <select id="inputEquipeMembroBuscar">
-                  <option value="">Selecione um profissional para adicionar...</option>
+                  <option value="">selecione um profissional...</option>
                 </select>
               </div>
 
-              
               <div class="form-group full-width">
                 <label>Profissionais Selecionados</label>
-                <div id="equipeMembrosChipsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 46px; padding: 10px; border: 1px dashed var(--border); border-radius: 12px; background: var(--bg-card);">
-                  <span style="color: var(--text-muted); font-size: 13px;">Nenhum profissional selecionado</span>
+                <div id="equipeMembrosChipsContainer" style="display:flex;flex-wrap:wrap;gap:8px;min-height:46px;padding:10px;border:1px dashed var(--border);border-radius:12px;background:var(--bg-card);">
+                  <span style="color: var(--text-muted); font-size: 13px;">nenhum profissional selecionado</span>
                 </div>
-              </div>
-
-              <div class="form-group full-width">
-                <label>Observações / Notas</label>
-                <textarea id="inputEquipeObs" rows="3" placeholder="Informações adicionais sobre o plantão ou equipe..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 12px; font-family: 'Inter', sans-serif; resize: vertical;"></textarea>
               </div>
             </div>
 

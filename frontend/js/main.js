@@ -30,12 +30,7 @@ let ocorrenciasCache = [
   { id: 2, titulo: "Acidente de Trânsito", prioridade: "Crítica", status: "Em Atendimento", veiculo_nome: "HOS-4B21", equipe_nome: "Enf. Joana Silva", paciente: "Desconhecido", endereco: "Rodovia Castelo Branco, km 15", descricao: "Colisão entre dois carros.", data: "2026-05-18" }
 ];
 
-let equipeEditandoId = null;
-let equipesCache = [
-  { id: 1, nome: "Equipe Plantão Alpha", data: "2026-05-22", turno: "Manhã", membros: [1, 3, 4], obs: "Equipe principal para atendimento de urgências do período matutino." },
-  { id: 2, nome: "Equipe UTI Especial", data: "2026-05-23", turno: "Integral", membros: [2, 3, 5], obs: "Equipe de apoio para UTI Móvel." }
-];
-let membrosSelecionadosIds = [];
+let equipesCache = [];
 
 // Gerenciamento de Cliques no Menu Lateral
 document.querySelectorAll(".sidebar-nav-main a, .sidebar-submenu a").forEach(link => {

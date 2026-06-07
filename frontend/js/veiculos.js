@@ -2,16 +2,20 @@ let veiculoSelecionadoPlaca = null;
 let veiculoEditandoPlaca = null;
 let disponibilidadesCache = [];
 
-async function carregarDisponibilidades() {
+
+async function carregarCacheDisponibilidades() {
   try {
     const resposta = await fazerRequisicao("/disponibilidades/");
+    if (!resposta.ok) throw new Error("Erro ao carregar disponibilidades");
+    disponibilidadesCache = await resposta.json()
+  } catch (erro) {
+    console.warn("(Disponibilidade) Backend offline ou com erro.");
+  }
+}
 
-    if (!resposta.ok) {
-      throw new Error("Erro ao carregar disponibilidades");
-    }
-
-    disponibilidadesCache = await resposta.json();
-
+async function carregarDisponibilidades() {
+  try {
+    carregarCacheDisponibilidades();
     const select = document.getElementById("inputDisponibilidade");
 
     if (!select) return;
@@ -376,3 +380,6 @@ async function deletarManutencao(id) {
   }
   carregarManutencoes();
 }
+
+window.carregarCacheVeiculos = carregarCacheVeiculos;
+window.carregarDisponibilidades = carregarDisponibilidades;
