@@ -182,17 +182,17 @@ class EquipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         profissionais = validated_data.pop('profissionais')
 
-        equipe = Equipe.objects.create(**validated_data)
-
         equipe.profissionais.set(profissionais)
 
-        disp_ocupado = Disponibilidade.objects.get(
-            codigo="OCUPADO"
+        indisponivel = Disponibilidade.objects.get(
+            codigo="INDISPONIVEL"
         )
 
         for prof in profissionais:
-            prof.disponibilidade = disp_ocupado
+            prof.disponibilidade = indisponivel
             prof.save()
+            
+        equipe = Equipe.objects.create(**validated_data)
 
         return equipe
 
@@ -209,8 +209,8 @@ class EquipeSerializer(serializers.ModelSerializer):
                 nome="DISPONIVEL"
             )
 
-            disp_ocupado = Disponibilidade.objects.get(
-                nome="OCUPADO"
+            indisponivel = Disponibilidade.objects.get(
+                nome="INDISPONIVEL"
             )
 
             antigos = set(
@@ -233,7 +233,7 @@ class EquipeSerializer(serializers.ModelSerializer):
             for prof in adicionados:
                 funcionario = prof.funcionario
 
-                funcionario.disponibilidade = disp_ocupado
+                funcionario.disponibilidade = indisponivel
                 funcionario.save()
 
             equipe.profissionais.set(

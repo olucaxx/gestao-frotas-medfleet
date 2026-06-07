@@ -110,19 +110,19 @@ function popularSelect(selectId, itens, getValue, getLabel, placeholder = "selec
 
 function labelCondutor(funcionario) {
   const cnh = getCnhByFuncionarioId(funcionario.matricula);
-  const cnhTexto = cnh ? `cnh ${cnh.categoria}` : "sem cnh";
-  return `${funcionario.nome} (${funcionario.matricula}) • ${cnhTexto}`;
+  const cnhTexto = cnh ? `CNH ${cnh.categoria}` : "Sem CNH";
+  return `${funcionario.nome} (${funcionario.matricula}) - ${cnhTexto}`;
 }
 
 function labelVeiculo(veiculo) {
-  return `${veiculo.placa} • ${veiculo.marca || ""} ${veiculo.modelo || ""} • cnh ${veiculo.cnh_necessaria || "-"}`.trim();
+  return `${veiculo.marca || ""} ${veiculo.modelo || ""} - ${veiculo.placa}`.trim();
 }
 
 function labelProfissional(funcionario) {
   const prof = getProfissionalSaudeByFuncionarioId(funcionario.matricula);
   const cargo = prof ? getCargoById(prof.cargo) : null;
-  return cargo ? `${funcionario.nome} (${funcionario.matricula}) • ${cargo.nome}` : `${funcionario.nome} (${funcionario.matricula})`;
-}
+  return cargo ? `${funcionario.nome} - ${cargo.nome}` : `${funcionario.nome}`;
+  }
 
 async function carregarCacheEquipes() {
   try {
@@ -232,14 +232,21 @@ function renderizarChipsProfissionais() {
 
     chip.innerHTML = `
       <span style="font-weight: 500;">${f.nome}${cargo ? ` (${cargo.nome})` : ""}</span>
-      <i class="ph ph-x" style="cursor:pointer;color:#ef4444;font-weight:bold;" onclick="removerProfissionalDeEquipe(${f.matricula})"></i>
+      <i class="ph ph-x" style="cursor:pointer;color:#ef4444;font-weight:bold;" onclick="removerMembroDeEquipe(${f.matricula})"></i>
     `;
 
     container.appendChild(chip);
   });
 }
 
-window.removerProfissionalDeEquipe = function (id) {
+window.removerMembroDeEquipe = function (id) {
+  const selectCondutor = document.getElementById("inputEquipeCondutor")
+
+  if (num(id) === num(selectCondutor.value)) {
+      avisar("o condutor não pode ser removido da equipe.", "warning");
+      return;
+  }
+
   profissionaisSelecionadosIds = profissionaisSelecionadosIds.filter(mId => num(mId) !== num(id));
   renderizarChipsProfissionais();
   atualizarSelectProfissionaisEquipe();
@@ -335,13 +342,13 @@ function selecionarEquipe(id) {
 
   if (el("detailEquipeCondutor")) {
     el("detailEquipeCondutor").textContent = condutor
-      ? `${condutor.nome} • matrícula ${condutor.matricula}${condutorCnh ? ` • cnh ${condutorCnh.categoria}` : ""}${apto ? "" : " • incompatível com o veículo"}`
+      ? `${condutor.nome}`
       : "-";
   }
 
   if (el("detailEquipeVeiculo")) {
     el("detailEquipeVeiculo").textContent = veiculo
-      ? `${veiculo.placa} • ${veiculo.marca || ""} ${veiculo.modelo || ""} • cnh ${veiculo.cnh_necessaria || "-"}`
+      ? `${veiculo.marca || ""} ${veiculo.modelo || ""} - ${veiculo.placa}`
       : "-";
   }
 
@@ -595,17 +602,5 @@ window.editarEquipe = editarEquipe;
 window.deletarEquipe = deletarEquipe;
 window.limparFormularioEquipe = limparFormularioEquipe;
 window.abrirEquipeModal = abrirEquipeModal;
-window.removerMembroDeEquipe = function(matricula) {
-
-    if (Number(matricula) === Number(condutorSelecionadoId)) {
-        mostrarToast("O condutor não pode ser removido da equipe.", "warning");
-        return;
-    }
-
-    membrosSelecionadosIds =
-        membrosSelecionadosIds.filter(id => Number(id) !== Number(matricula));
-
-    renderizarChipsMembros();
-}
 
 bindEquipeEvents();

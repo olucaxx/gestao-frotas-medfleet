@@ -1,6 +1,0 @@
-bloquear remoção do motorista da equipe, somente pelo select de condutor
-
-verificar todas as operações na equipe
-
-mostrar apenas motoristas e veiculos disponíveis 
-
