@@ -718,87 +718,108 @@
         <div class="page-body">
         
         <div class="tracking-sidebar" id="ocorrenciasSidebar">
-          <div class="pill-filters">
-            <p>Filtrar Status:</p>
-            <div class="pill-group">
-              <button class="pill active">Todas <span class="badge" id="badgeTotalOcorrencias">0</span></button>
-              <button class="pill">Ativa</button>
-              <button class="pill">Em Atend.</button>
-              <button class="pill">Finalizada</button>
-            </div>
-          </div>
           <div id="ocorrenciasList" class="tracking-grid"></div>
         </div>
 
         
         <div class="vehicle-details-panel hidden" id="ocorrenciasDetail">
+ 
           <div class="details-top-bar">
             <button class="close-details-btn" onclick="fecharDetalhes('ocorrencias')">
               <i class="ph ph-arrow-left"></i> Voltar para lista
             </button>
           </div>
+        
           <div class="details-header">
             <div class="header-title">
               <h2 id="detailOcorrenciaTitulo">Selecione uma Ocorrência</h2>
-              <span id="detailOcorrenciaStatus" class="status-badge badge-emergency"><i class="ph ph-warning-circle"></i> Pendente</span>
+              <span id="detailOcorrenciaStatus" class="status-badge badge-emergency">
+                <i class="ph ph-warning-circle"></i> Aguardando
+              </span>
             </div>
             <div class="header-actions">
-              <button class="btn-outline-primary" id="btnResolverOcorrencia"><i class="ph ph-check-circle"></i> Finalizar</button>
+              <button class="btn-outline-primary" id="btnResolverOcorrencia">
+                <i class="ph ph-play"></i> Iniciar Atendimento
+              </button>
             </div>
           </div>
-
+        
+          <!-- Tabs -->
           <div class="details-tabs">
-            <button class="tab active">Detalhes da Ocorrência</button>
+            <button class="tab active" data-tab="infoOcorrencia">Chamado</button>
+            <button class="tab"        data-tab="equipeOcorrencia">Equipe</button>
           </div>
-
-          <div class="details-content">
-             <div class="large-vehicle-image" style="display: flex; justify-content: center; align-items: center; background: var(--bg-secondary); border-radius: 12px; padding: 2rem;">
-               <i class="ph ph-warning-circle" style="font-size: 80px; color: var(--status-emergency);"></i>
-             </div>
-
-             <div class="vehicle-info-grid">
-               <div class="info-box">
-                 <p>Prioridade</p>
-                 <h4 id="detailOcorrenciaPrioridade">-</h4>
-               </div>
-               <div class="info-box">
-                 <p>Data</p>
-                 <h4 id="detailOcorrenciaData">-</h4>
-               </div>
-               <div class="info-box">
-                  <p>Nome do Paciente</p>
-                  <h4 id="detailOcorrenciaPacienteNome">-</h4>
-                </div>
-
-                <div class="info-box">
-                  <p>Telefone</p>
-                  <h4 id="detailOcorrenciaPacienteTelefone">-</h4>
-                </div>
-               <div class="info-box full-width">
-                 <p>Endereço / Localização</p>
-                 <h4 id="detailOcorrenciaEndereco">-</h4>
-               </div>
-               <div class="info-box">
-                 <p>Viatura</p>
-                 <h4 id="detailOcorrenciaVeiculo">-</h4>
-               </div>
-               <div class="info-box">
-                 <p>Equipe / Motorista</p>
-                 <h4 id="detailOcorrenciaEquipe">-</h4>
-               </div>
-               <div class="info-box full-width">
-                 <p>Descrição</p>
-                 <p id="detailOcorrenciaDescricao" style="margin-top: 8px; line-height: 1.6; color: var(--text);">-</p>
-               </div>
-             </div>
-
-             <div class="admin-actions" style="margin-top: 30px;">
-               <button class="btn-outline" id="btnEditOcorrencia"><i class="ph ph-pencil-simple"></i> Editar Ocorrência</button>
-               <button class="btn-outline-danger" id="btnDeleteOcorrencia"><i class="ph ph-trash"></i> Remover</button>
-             </div>
+        
+          <!-- ── Tab 1: Chamado ────────────────────────────────────────────── -->
+          <div class="details-content tab-content active" id="infoOcorrencia">
+        
+            <div class="large-vehicle-image"
+                style="display:flex;justify-content:center;align-items:center;
+                        background:var(--bg-secondary);border-radius:12px;padding:2rem;">
+              <i class="ph ph-warning-circle"
+                style="font-size:80px;color:var(--status-emergency);"></i>
+            </div>
+        
+            <div class="vehicle-info-grid">
+        
+              <div class="info-box">
+                <p>Prioridade</p>
+                <h4 id="detailOcorrenciaPrioridade">-</h4>
+              </div>
+        
+              <div class="info-box">
+                <p>Data / Hora</p>
+                <h4 id="detailOcorrenciaData">-</h4>
+              </div>
+        
+              <div class="info-box">
+                <p>Nome do Paciente</p>
+                <h4 id="detailOcorrenciaPacienteNome">-</h4>
+              </div>
+        
+              <div class="info-box">
+                <p>Telefone</p>
+                <h4 id="detailOcorrenciaPacienteTelefone">-</h4>
+              </div>
+        
+              <div class="info-box full-width">
+                <p>Endereço / Localização</p>
+                <h4 id="detailOcorrenciaEndereco">-</h4>
+              </div>
+        
+              <div class="info-box">
+                <p>Viatura</p>
+                <h4 id="detailOcorrenciaVeiculo">-</h4>
+              </div>
+        
+              <div class="info-box full-width">
+                <p>Descrição</p>
+                <p id="detailOcorrenciaDescricao"
+                  style="margin-top:8px;line-height:1.6;color:var(--text);">-</p>
+              </div>
+        
+            </div>
+        
+            <div class="admin-actions" style="margin-top:30px;">
+              <button class="btn-outline" id="btnEditOcorrencia">
+                <i class="ph ph-pencil-simple"></i> Editar Ocorrência
+              </button>
+              <button class="btn-outline-danger" id="btnDeleteOcorrencia">
+                <i class="ph ph-trash"></i> Remover
+              </button>
+            </div>
+        
           </div>
+        
+          <!-- ── Tab 2: Equipe ─────────────────────────────────────────────── -->
+          <div class="details-content tab-content hidden" id="equipeOcorrencia">
+        
+            <!-- Preenchido dinamicamente pelo JS (função _renderizarAbaEquipe) -->
+            <div id="detailOcorrenciaEquipeInfo" style="padding:0;"></div>
+        
+          </div>
+        
         </div>
-      </div>
 
         
         <div id="ocorrenciaModal" class="modal-overlay hidden">
@@ -861,7 +882,37 @@
 
             <div class="modal-footer">
               <button id="cancelOcorrencia" class="btn-outline-danger">Cancelar</button>
-              <button id="saveOcorrencia" class="btn-primary"><i class="ph ph-paper-plane-right"></i> Salvar
+              <button id="saveOcorrencia" class="btn-primary"><i class="ph ph-paper-plane-right"></i> Salvar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="statusOcorrenciaModal" class="modal-overlay hidden">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="statusOcorrenciaModalTitle">Atualizar status da ocorrência</h3>
+            <button class="close-modal-btn" id="closeStatusOcorrenciaModal"><i class="ph ph-x"></i></button>
+          </div>
+
+          <div class="modal-body form-grid">
+            <div class="form-group full-width" id="statusOcorrenciaAtendimentoGroup">
+              <label>Horário de Atendimento</label>
+              <input type="datetime-local" id="inputOcorrenciaHorarioAtendimento" />
+            </div>
+
+            <div class="form-group full-width hidden" id="statusOcorrenciaChegadaGroup">
+              <label>Horário de Chegada ao Hospital</label>
+              <input type="datetime-local" id="inputOcorrenciaHorarioChegadaHospital" />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button id="cancelStatusOcorrencia" class="btn-outline-danger">Cancelar</button>
+            <button id="confirmStatusOcorrencia" class="btn-primary"><i class="ph ph-check-circle"></i> Confirmar</button>
+          </div>
+        </div>
+      </div>
                 Ocorrência</button>
             </div>
           </div>

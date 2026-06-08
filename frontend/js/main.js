@@ -24,11 +24,7 @@ let currentFuncionarioFilter = null;
 
 let veiculosCache = [];
 let funcionariosCache = [];
-let ocorrenciasCache = [
-  { id: 1, titulo: "Mal súbito", prioridade: "Alta", status: "Ativa", veiculo_nome: "AMB-1020", equipe_nome: "Dr. Marcos Paulo", paciente: "João das Neves", endereco: "Av. Paulista, 1000", descricao: "Paciente inconsciente na rua.", data: "2026-05-19" },
-  { id: 2, titulo: "Acidente de Trânsito", prioridade: "Crítica", status: "Em Atendimento", veiculo_nome: "HOS-4B21", equipe_nome: "Enf. Joana Silva", paciente: "Desconhecido", endereco: "Rodovia Castelo Branco, km 15", descricao: "Colisão entre dois carros.", data: "2026-05-18" }
-];
-
+let ocorrenciasCache = [];
 let equipesCache = [];
 let prioridadesCache = [];
 let statusCache = [];
