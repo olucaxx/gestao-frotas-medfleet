@@ -214,8 +214,7 @@ window.mostrarToast = mostrarToast;
 const COD_DISPONIVEL = "DISPONIVEL";
 
 function numId(valor) {
-  const n = Number(valor);
-  return Number.isNaN(n) ? null : n;
+  return valor === null? null : Number(valor);
 }
 
 function getDispCodigo(disponibilidadeId) {

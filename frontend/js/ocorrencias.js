@@ -182,11 +182,12 @@ function selecionarOcorrencia(id) {
   const podeEditar = statusCod === "AGUARDANDO";
 
   if (el("btnEditOcorrencia")) {
-    el("btnEditOcorrencia").disabled = !podeEditar;
     el("btnEditOcorrencia").title    = podeEditar
       ? ""
       : "Só é possível editar ocorrências ainda aguardando";
-    el("btnEditOcorrencia").onclick = podeEditar ? () => editarOcorrencia(o.id) : null;
+    el("btnEditOcorrencia").onclick = podeEditar 
+      ? () => editarOcorrencia(o.id) 
+      : () => mostrarToast("Só é possível editar ocorrências ainda aguardando", "warning");
   }
 
   if (el("btnDeleteOcorrencia")) {
@@ -211,12 +212,14 @@ function _atualizarBotaoStatus(btn, id, statusCod, ocorrencia) {
 
   if (statusCod === "AGUARDANDO") {
     const semEquipe = !ocorrencia?.equipe;
+    console.log(semEquipe)
     btn.innerHTML = '<i class="ph ph-play"></i> Iniciar Atendimento';
     btn.className = "btn-outline-primary";
     btn.disabled  = semEquipe;
     btn.title     = semEquipe ? "Vincule uma equipe antes de iniciar o atendimento" : "";
     btn.onclick   = semEquipe
-      ? () => mostrarToast("Vincule uma equipe à ocorrência antes de iniciar o atendimento.", "warning")
+      ? () => {console.log('oi')
+        mostrarToast("Vincule uma equipe à ocorrência antes de iniciar o atendimento.", "warning")}
       : () => avancarStatus(id, "EM_ATENDIMENTO");
 
   } else if (statusCod === "EM_ATENDIMENTO") {
