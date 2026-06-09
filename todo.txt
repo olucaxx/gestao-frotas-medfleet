@@ -1,7 +1,6 @@
-arrumar badges no css, pegar pelo codigo e tal
+campo para telefone do paciente
 
-ajustar card da ocorrencia para ficar igual ao js antigo
+soft delete 
+    metodo delete no serializer
+adicionar disponibilidade DESATIVADO ou boolean ativo
 
-mostrar em uma tab separada sobre a equipe do chamado
-tela principal somente informações do chamado
-pode deixar o paciente e telefone em branco inicialmente

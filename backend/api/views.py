@@ -1,4 +1,5 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.response import Response
 
 from .models import (
     Veiculo,
@@ -17,6 +18,7 @@ from .models import (
     Abastecimento
 )
 
+from .services import disponibilidade as disp_svc
 from .serializers import (
     VeiculoSerializer,
     FuncionarioSerializer,
@@ -77,6 +79,24 @@ class EquipeViewSet(viewsets.ModelViewSet):
     )
 
     serializer_class = EquipeSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        equipe = self.get_object()
+
+        if disp_svc.equipe_em_atendimento(equipe):
+            return Response(
+                {"detail": "equipe em atendimento nao pode ser excluida"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if disp_svc.ocorrencia_ativa_com_equipe(equipe):
+            return Response(
+                {"detail": "equipe vinculada a ocorrencia ativa nao pode ser excluida"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        disp_svc.desvincular_membros_equipe(equipe)
+        return super().destroy(request, *args, **kwargs)
 
 
 class OcorrenciaViewSet(viewsets.ModelViewSet):

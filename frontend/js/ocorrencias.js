@@ -176,7 +176,7 @@ function selecionarOcorrencia(id) {
   _renderizarAbaEquipe(o);
 
   // ── Botão avançar status ──────────────────────────────────────────────────
-  _atualizarBotaoStatus(el("btnResolverOcorrencia"), id, statusCod);
+  _atualizarBotaoStatus(el("btnResolverOcorrencia"), id, statusCod, o);
 
   // ── Editar / excluir (bloqueado se não for AGUARDANDO) ────────────────────
   const podeEditar = statusCod === "AGUARDANDO";
@@ -206,14 +206,18 @@ function selecionarOcorrencia(id) {
 // Botão de avanço de status (muda conforme estado atual)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function _atualizarBotaoStatus(btn, id, statusCod) {
+function _atualizarBotaoStatus(btn, id, statusCod, ocorrencia) {
   if (!btn) return;
 
   if (statusCod === "AGUARDANDO") {
+    const semEquipe = !ocorrencia?.equipe;
     btn.innerHTML = '<i class="ph ph-play"></i> Iniciar Atendimento';
     btn.className = "btn-outline-primary";
-    btn.disabled  = false;
-    btn.onclick   = () => avancarStatus(id, "EM_ATENDIMENTO");
+    btn.disabled  = semEquipe;
+    btn.title     = semEquipe ? "Vincule uma equipe antes de iniciar o atendimento" : "";
+    btn.onclick   = semEquipe
+      ? () => mostrarToast("Vincule uma equipe à ocorrência antes de iniciar o atendimento.", "warning")
+      : () => avancarStatus(id, "EM_ATENDIMENTO");
 
   } else if (statusCod === "EM_ATENDIMENTO") {
     btn.innerHTML = '<i class="ph ph-check-circle"></i> Finalizar';
@@ -318,6 +322,17 @@ async function avancarStatus(id, novoCodigo) {
   const novoStatus = (statusCache || []).find(s => s.codigo === novoCodigo);
   if (!novoStatus) return mostrarToast("Status não encontrado", "error");
 
+  const ocorrencia = (ocorrenciasCache || []).find(oc => oc.id === id);
+  if (novoCodigo === "EM_ATENDIMENTO") {
+    if (!ocorrencia?.equipe) {
+      return mostrarToast("Não é possível iniciar uma ocorrência sem equipe vinculada.", "warning");
+    }
+    const equipe = _equipeById(ocorrencia.equipe);
+    if (!equipe || !equipeElegivelParaOcorrencia(equipe, id)) {
+      return mostrarToast("A equipe selecionada não está disponível para atendimento.", "error");
+    }
+  }
+
   try {
     const r = await fazerRequisicao(`/ocorrencias/${id}/`, {
       method: "PATCH",
@@ -353,14 +368,12 @@ function preencherSelectsOcorrencia() {
   preencherSelect("inputOcorrenciaStatus", statusCache ?? [],
     "Selecione o status…", s => s.id, s => s.nome);
 
-  // Apenas equipes disponíveis
-  const disponiveis = (equipesCache ?? []).filter(e => {
-    const disp = (disponibilidadesCache ?? []).find(d => d.id === e.disponibilidade);
-    return !disp || disp.codigo === "DISPONIVEL";
-  });
+  const disponiveis = (equipesCache ?? []).filter(e =>
+    equipeElegivelParaOcorrencia(e, ocorrenciaEditandoId)
+  );
 
   preencherSelect("inputOcorrenciaEquipe", disponiveis,
-    "Sem equipe (opcional)…", e => e.id, e => e.nome_equipe);
+    "Sem equipe (atribuir depois)…", e => e.id, e => e.nome_equipe);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

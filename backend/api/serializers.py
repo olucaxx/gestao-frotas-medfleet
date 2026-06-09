@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from .models import (
@@ -16,20 +17,65 @@ from .models import (
     Disponibilidade,
     Atendente,
     Manutencao,
-    Abastecimento
+    Abastecimento,
 )
+from .services import disponibilidade as disp_svc
 
 
 class VeiculoSerializer(serializers.ModelSerializer):
+    equipe_nome = serializers.SerializerMethodField()
+    disponibilidade_controlada = serializers.SerializerMethodField()
+
     class Meta:
         model = Veiculo
         fields = '__all__'
+        read_only_fields = ['equipe_atribuida', 'equipe_nome', 'disponibilidade_controlada']
+
+    def get_equipe_nome(self, obj):
+        return obj.equipe_atribuida.nome_equipe if obj.equipe_atribuida else None
+
+    def get_disponibilidade_controlada(self, obj):
+        return disp_svc.membro_vinculado_a_equipe(obj)
+
+    def validate(self, data):
+        instance = self.instance
+        nova_disp = data.get('disponibilidade')
+
+        if instance and disp_svc.membro_vinculado_a_equipe(instance):
+            if nova_disp and nova_disp != instance.disponibilidade:
+                raise serializers.ValidationError(
+                    "disponibilidade de veiculo vinculado a equipe e controlada automaticamente"
+                )
+
+        return data
 
 
 class FuncionarioSerializer(serializers.ModelSerializer):
+    equipe_nome = serializers.SerializerMethodField()
+    disponibilidade_controlada = serializers.SerializerMethodField()
+
     class Meta:
         model = Funcionario
         fields = '__all__'
+        read_only_fields = ['equipe_atribuida', 'equipe_nome', 'disponibilidade_controlada']
+
+    def get_equipe_nome(self, obj):
+        return obj.equipe_atribuida.nome_equipe if obj.equipe_atribuida else None
+
+    def get_disponibilidade_controlada(self, obj):
+        return disp_svc.membro_vinculado_a_equipe(obj)
+
+    def validate(self, data):
+        instance = self.instance
+        nova_disp = data.get('disponibilidade')
+
+        if instance and disp_svc.membro_vinculado_a_equipe(instance):
+            if nova_disp and nova_disp != instance.disponibilidade:
+                raise serializers.ValidationError(
+                    "disponibilidade de funcionario vinculado a equipe e controlada automaticamente"
+                )
+
+        return data
 
 
 class CNHSerializer(serializers.ModelSerializer):
@@ -99,11 +145,20 @@ class EquipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Equipe
         fields = '__all__'
+        read_only_fields = ['disponibilidade']
 
     def validate(self, data):
-        condutor = data.get('condutor')
-        profissionais = data.get('profissionais', [])
-        veiculo = data.get('veiculo')
+        condutor = data.get('condutor', getattr(self.instance, 'condutor', None))
+        profissionais = data.get(
+            'profissionais',
+            list(self.instance.profissionais.all()) if self.instance else []
+        )
+        veiculo = data.get('veiculo', getattr(self.instance, 'veiculo', None))
+
+        if self.instance and disp_svc.equipe_em_atendimento(self.instance):
+            raise serializers.ValidationError(
+                "equipe em atendimento nao pode ser alterada"
+            )
 
         if not self.instance and len(profissionais) == 0:
             raise serializers.ValidationError(
@@ -143,60 +198,56 @@ class EquipeSerializer(serializers.ModelSerializer):
                 "categoria da cnh incompativel"
             )
 
-        equipes_veiculo = Equipe.objects.filter(veiculo=veiculo)
-        if self.instance:
-            equipes_veiculo = equipes_veiculo.exclude(id=self.instance.id)
-        if equipes_veiculo.exists():
-            raise serializers.ValidationError(
-                "veiculo ja pertence a outra equipe"
-            )
+        ok, msg = disp_svc.validar_membros_equipe(
+            condutor, profissionais, veiculo, self.instance
+        )
+        if not ok:
+            raise serializers.ValidationError(msg)
 
-        for prof in profissionais:
-            equipes_prof = Equipe.objects.filter(profissionais=prof)
-            if self.instance:
-                equipes_prof = equipes_prof.exclude(id=self.instance.id)
-            if equipes_prof.exists():
-                raise serializers.ValidationError(
-                    f"profissional '{prof.nome}' ja pertence a outra equipe"
-                )
+        if 'disponibilidade' in data:
+            raise serializers.ValidationError(
+                "disponibilidade da equipe e controlada automaticamente"
+            )
 
         return data
 
     def create(self, validated_data):
         profissionais = validated_data.pop('profissionais')
+        validated_data.pop('disponibilidade', None)
+        validated_data['disponibilidade'] = Disponibilidade.objects.get(
+            codigo=disp_svc.COD_DISPONIVEL
+        )
+
+        condutor = validated_data['condutor']
+        veiculo = validated_data['veiculo']
 
         equipe = Equipe.objects.create(**validated_data)
         equipe.profissionais.set(profissionais)
-
-        disp_indisponivel = Disponibilidade.objects.get(codigo="INDISPONIVEL")
-
-        for prof in profissionais:
-            prof.disponibilidade = disp_indisponivel
-            prof.save()
+        disp_svc.vincular_membros_equipe(equipe, profissionais, veiculo, condutor)
 
         return equipe
 
     def update(self, instance, validated_data):
         novos_profissionais = validated_data.pop('profissionais', None)
+        validated_data.pop('disponibilidade', None)
+
+        condutor = validated_data.get('condutor', instance.condutor)
+        veiculo = validated_data.get('veiculo', instance.veiculo)
 
         equipe = super().update(instance, validated_data)
 
         if novos_profissionais is not None:
-            disp_disponivel = Disponibilidade.objects.get(codigo="DISPONIVEL")
-            disp_indisponivel = Disponibilidade.objects.get(codigo="INDISPONIVEL")
-
-            antigos = set(instance.profissionais.all())
-            novos = set(novos_profissionais)
-
-            for prof in antigos - novos:
-                prof.disponibilidade = disp_disponivel
-                prof.save()
-
-            for prof in novos - antigos:
-                prof.disponibilidade = disp_indisponivel
-                prof.save()
-
             equipe.profissionais.set(novos_profissionais)
+            disp_svc.vincular_membros_equipe(
+                equipe, novos_profissionais, veiculo, condutor
+            )
+        else:
+            disp_svc.vincular_membros_equipe(
+                equipe,
+                list(equipe.profissionais.all()),
+                veiculo,
+                condutor,
+            )
 
         return equipe
 
@@ -225,20 +276,59 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
                 "chegada antes do atendimento"
             )
 
+        instance = self.instance
+        novo_status = data.get('status', getattr(instance, 'status', None))
+        nova_equipe = data.get('equipe', getattr(instance, 'equipe', None))
+
+        if novo_status and novo_status.codigo == "EM_ATENDIMENTO":
+            equipe_ref = nova_equipe or (instance.equipe if instance else None)
+            if not equipe_ref:
+                raise serializers.ValidationError(
+                    "ocorrencia so pode ser iniciada com uma equipe vinculada"
+                )
+
+            ok, msg = disp_svc.equipe_disponivel_para_ocorrencia(
+                equipe_ref,
+                ocorrencia_id=instance.id if instance else None,
+            )
+            if not ok:
+                raise serializers.ValidationError(msg)
+
+        if nova_equipe and instance:
+            if instance.equipe and nova_equipe != instance.equipe:
+                raise serializers.ValidationError(
+                    "nao pode trocar equipe"
+                )
+
+        if nova_equipe and (not instance or not instance.equipe):
+            ok, msg = disp_svc.equipe_disponivel_para_ocorrencia(
+                nova_equipe,
+                ocorrencia_id=instance.id if instance else None,
+            )
+            if not ok:
+                raise serializers.ValidationError(msg)
+
         return data
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
-        return super().create(validated_data)
+        status_inicial = validated_data.get('status')
+        ocorrencia = super().create(validated_data)
+
+        if ocorrencia.equipe:
+            disp_svc.vincular_ocorrencia_a_equipe(ocorrencia, ocorrencia.equipe)
+
+            if status_inicial and status_inicial.codigo == "EM_ATENDIMENTO":
+                disp_svc.iniciar_atendimento_equipe(ocorrencia.equipe)
+
+        return ocorrencia
 
     def update(self, instance, validated_data):
         validated_data['updated_by'] = self.context['request'].user
 
         novo_status = validated_data.get('status', instance.status)
         nova_equipe = validated_data.get('equipe', instance.equipe)
-
-        disp_em_rota = Disponibilidade.objects.get(codigo="EM_ROTA")
-        disp_disponivel = Disponibilidade.objects.get(codigo="DISPONIVEL")
+        status_anterior = instance.status.codigo
 
         if instance.status.codigo == "FINALIZADO":
             raise serializers.ValidationError(
@@ -256,35 +346,42 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
         )
 
         if atribuindo_equipe:
-            if nova_equipe.disponibilidade.codigo != "DISPONIVEL":
+            ok, msg = disp_svc.equipe_disponivel_para_ocorrencia(
+                nova_equipe, ocorrencia_id=instance.id
+            )
+            if not ok:
+                raise serializers.ValidationError(msg)
+
+        iniciando_atendimento = (
+            status_anterior == "AGUARDANDO" and
+            novo_status.codigo == "EM_ATENDIMENTO"
+        )
+
+        equipe_ref = nova_equipe or instance.equipe
+
+        if iniciando_atendimento:
+            if not equipe_ref:
                 raise serializers.ValidationError(
-                    "equipe nao disponivel"
+                    "ocorrencia so pode ser iniciada com uma equipe vinculada"
                 )
-
-            nova_equipe.disponibilidade = disp_em_rota
-            nova_equipe.save()
-
-            nova_equipe.veiculo.disponibilidade = disp_em_rota
-            nova_equipe.veiculo.save()
+            if not validated_data.get('horario_atendimento') and not instance.horario_atendimento:
+                validated_data['horario_atendimento'] = timezone.now()
 
         instance = super().update(instance, validated_data)
 
         if atribuindo_equipe:
-            instance.condutor = nova_equipe.condutor
-            instance.veiculo = nova_equipe.veiculo
-            instance.save()
-            instance.profissionais.set(nova_equipe.profissionais.all())
+            disp_svc.vincular_ocorrencia_a_equipe(instance, nova_equipe)
+
+        if iniciando_atendimento and equipe_ref:
+            disp_svc.iniciar_atendimento_equipe(equipe_ref)
+            disp_svc.vincular_ocorrencia_a_equipe(instance, equipe_ref)
 
         if (
-            instance.status.codigo != "FINALIZADO" and
-            novo_status.codigo == "FINALIZADO"
+            status_anterior != "FINALIZADO" and
+            novo_status.codigo == "FINALIZADO" and
+            instance.equipe
         ):
-            if instance.equipe:
-                equipe = instance.equipe
-                equipe.disponibilidade = disp_disponivel
-                equipe.save()
-                equipe.veiculo.disponibilidade = disp_disponivel
-                equipe.veiculo.save()
+            disp_svc.finalizar_atendimento_equipe(instance.equipe)
 
         return instance
 

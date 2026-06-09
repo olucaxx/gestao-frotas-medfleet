@@ -1306,6 +1306,26 @@ html:not(.dark) .toast {
   border-left: 4px solid #ef4444;
 }
 
+.toast-info .toast-icon {
+  color: #3b82f6;
+}
+
+.toast-info {
+  border-left: 4px solid #3b82f6;
+}
+
+.badge-equipe {
+  background: rgba(99, 102, 241, 0.15);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+html.dark .badge-equipe {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
 
 
 

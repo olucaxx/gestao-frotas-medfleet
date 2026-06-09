@@ -19,11 +19,7 @@ function extrairId(valor) {
 }
 
 function avisar(msg, tipo = "warning") {
-  if (typeof mostrarToast === "function") {
-    mostrarToast(msg, tipo);
-  } else {
-    alert(msg);
-  }
+  mostrarToast(msg, tipo);
 }
 
 function getFuncionarioByMatricula(matricula) {
@@ -56,11 +52,6 @@ function getCargoById(cargoId) {
   return lista.find(c => num(c.id) === num(cargoId)) || null;
 }
 
-function getCargoDoFuncionario(funcionarioId) {
-  const prof = getProfissionalSaudeByFuncionarioId(funcionarioId);
-  return prof ? getCargoById(prof.cargo) : null;
-}
-
 function getEquipeProfissionaisIds(eq) {
   const profissionais = Array.isArray(eq?.profissionais) ? eq.profissionais : [];
   return profissionais
@@ -81,17 +72,18 @@ function condutorAptoParaVeiculo(funcionarioId, veiculoId) {
   return categoriaScore(cnh.categoria) >= categoriaScore(veiculo.cnh_necessaria);
 }
 
-function classeBadgeDisponibilidade(disponibilidade) {
-  const texto = String(disponibilidade?.nome || disponibilidade?.codigo || disponibilidade || "").toUpperCase();
-
-  if (texto.includes("ATEND")) return "badge-route";
-  if (texto.includes("INAT")) return "badge-maintenance";
-  return "badge-available";
+function classeBadgeDisponibilidadeEquipe(disponibilidade) {
+  const codigo = disponibilidade?.codigo ?? getDispCodigo(disponibilidade?.id ?? disponibilidade);
+  return classeBadgePorCodigo(codigo);
 }
 
 function textoDisponibilidade(disponibilidade) {
   if (!disponibilidade) return "-";
-  return disponibilidade.nome || disponibilidade.codigo || "-";
+  if (typeof disponibilidade === "object") {
+    return disponibilidade.nome || disponibilidade.codigo || "-";
+  }
+  const disp = getDisponibilidadeById(disponibilidade);
+  return disp ? (disp.nome || disp.codigo) : "-";
 }
 
 function popularSelect(selectId, itens, getValue, getLabel, placeholder = "selecione...") {
@@ -122,18 +114,13 @@ function labelProfissional(funcionario) {
   const prof = getProfissionalSaudeByFuncionarioId(funcionario.matricula);
   const cargo = prof ? getCargoById(prof.cargo) : null;
   return cargo ? `${funcionario.nome} - ${cargo.nome}` : `${funcionario.nome}`;
-  }
+}
 
 async function carregarCacheEquipes() {
   try {
     const resposta = await fazerRequisicao("/equipes/");
-
-    if (!resposta.ok) {
-      throw new Error("API falhou");
-    }
-
+    if (!resposta.ok) throw new Error("API falhou");
     equipesCache = await resposta.json();
-
   } catch (erro) {
     console.warn("(Equipes) Backend offline ou com erro.");
   }
@@ -155,27 +142,28 @@ async function carregarDependenciasEquipe() {
 function atualizarSelectsEquipe() {
   const funcionarios = typeof funcionariosCache !== "undefined" ? funcionariosCache : [];
   const veiculos = typeof veiculosCache !== "undefined" ? veiculosCache : [];
-  const disponibilidades = typeof disponibilidadesCache !== "undefined" ? disponibilidadesCache : [];
+  const equipeId = equipeEditandoId ? num(equipeEditandoId) : null;
+
+  const funcionariosElegiveis = funcionarios.filter(f =>
+    funcionarioElegivelParaEquipe(f, equipeId)
+  );
+
+  const veiculosElegiveis = veiculos.filter(v =>
+    veiculoElegivelParaEquipe(v, equipeId)
+  );
 
   popularSelect(
     "inputEquipeCondutor",
-    funcionarios,
+    funcionariosElegiveis,
     f => f.matricula,
     labelCondutor
   );
 
   popularSelect(
     "inputEquipeVeiculo",
-    veiculos,
+    veiculosElegiveis,
     v => v.id,
     labelVeiculo
-  );
-
-  popularSelect(
-    "inputEquipeDisponibilidade",
-    disponibilidades,
-    d => d.id,
-    d => d.nome || d.codigo || "sem nome"
   );
 
   atualizarSelectProfissionaisEquipe();
@@ -187,10 +175,12 @@ function atualizarSelectProfissionaisEquipe() {
 
   const funcionarios = typeof funcionariosCache !== "undefined" ? funcionariosCache : [];
   const condutorId = num(document.getElementById("inputEquipeCondutor")?.value);
+  const equipeId = equipeEditandoId ? num(equipeEditandoId) : null;
 
   select.innerHTML = '<option value="">selecione um profissional...</option>';
 
   funcionarios
+    .filter(f => funcionarioElegivelParaEquipe(f, equipeId))
     .filter(f => num(f.matricula) !== condutorId)
     .filter(f => !profissionaisSelecionadosIds.some(id => num(id) === num(f.matricula)))
     .forEach(f => {
@@ -240,11 +230,11 @@ function renderizarChipsProfissionais() {
 }
 
 window.removerMembroDeEquipe = function (id) {
-  const selectCondutor = document.getElementById("inputEquipeCondutor")
+  const selectCondutor = document.getElementById("inputEquipeCondutor");
 
-  if (num(id) === num(selectCondutor.value)) {
-      avisar("o condutor não pode ser removido da equipe.", "warning");
-      return;
+  if (num(id) === num(selectCondutor?.value)) {
+    avisar("O condutor não pode ser removido da equipe.", "warning");
+    return;
   }
 
   profissionaisSelecionadosIds = profissionaisSelecionadosIds.filter(mId => num(mId) !== num(id));
@@ -253,10 +243,7 @@ window.removerMembroDeEquipe = function (id) {
 };
 
 async function carregarEquipes() {
-  if (typeof carregarCacheEquipes === "function") {
-    await carregarCacheEquipes();
-  }
-
+  await carregarCacheEquipes();
   await carregarDependenciasEquipe();
 
   const lista = document.getElementById("equipeMedicaList");
@@ -273,10 +260,11 @@ async function carregarEquipes() {
     const condutor = getFuncionarioByMatricula(condutorId);
     const veiculo = getVeiculoById(veiculoId);
     const disponibilidade = getDisponibilidadeById(disponibilidadeId);
+    const dispCodigo = disponibilidade?.codigo ?? "";
 
     const condutorApto = condutorAptoParaVeiculo(condutorId, veiculoId);
     const badgeStatus = disponibilidade
-      ? `<span class="status-badge ${classeBadgeDisponibilidade(disponibilidade)}"><i class="ph ph-users"></i> ${textoDisponibilidade(disponibilidade)}</span>`
+      ? `<span class="status-badge ${classeBadgeDisponibilidadeEquipe(disponibilidade)}"><i class="ph ${iconeBadgePorCodigo(dispCodigo)}"></i> ${textoDisponibilidade(disponibilidade)}</span>`
       : `<span class="status-badge badge-available"><i class="ph ph-users"></i> -</span>`;
 
     const cartao = document.createElement("div");
@@ -307,7 +295,7 @@ async function carregarEquipes() {
     lista.appendChild(cartao);
   });
 
-  if (typeof fecharDetalhes === "function") fecharDetalhes("equipeMedica");
+  fecharDetalhes("equipeMedica");
 }
 
 function selecionarEquipe(id) {
@@ -327,8 +315,8 @@ function selecionarEquipe(id) {
   const condutor = getFuncionarioByMatricula(condutorId);
   const veiculo = getVeiculoById(veiculoId);
   const disponibilidade = getDisponibilidadeById(disponibilidadeId);
-  const condutorCnh = getCnhByFuncionarioId(condutorId);
-  const apto = condutorAptoParaVeiculo(condutorId, veiculoId);
+  const dispCodigo = disponibilidade?.codigo ?? "";
+  const condutorApto = condutorAptoParaVeiculo(condutorId, veiculoId);
 
   const el = idDoc => document.getElementById(idDoc);
 
@@ -336,14 +324,12 @@ function selecionarEquipe(id) {
 
   if (el("detailEquipeStatus")) {
     const statusEl = el("detailEquipeStatus");
-    statusEl.className = `status-badge ${classeBadgeDisponibilidade(disponibilidade)}`;
-    statusEl.innerHTML = `<i class="ph ph-users"></i> ${textoDisponibilidade(disponibilidade)}`;
+    statusEl.className = `status-badge ${classeBadgeDisponibilidadeEquipe(disponibilidade)}`;
+    statusEl.innerHTML = `<i class="ph ${iconeBadgePorCodigo(dispCodigo)}"></i> ${textoDisponibilidade(disponibilidade)}`;
   }
 
   if (el("detailEquipeCondutor")) {
-    el("detailEquipeCondutor").textContent = condutor
-      ? `${condutor.nome}`
-      : "-";
+    el("detailEquipeCondutor").textContent = condutor ? condutor.nome : "-";
   }
 
   if (el("detailEquipeVeiculo")) {
@@ -398,29 +384,33 @@ function selecionarEquipe(id) {
     }
   }
 
-  if (el("btnEditEquipe")) el("btnEditEquipe").onclick = () => editarEquipe(eq.id);
+  const emAtendimento = dispCodigo === "ATENDENDO" || dispCodigo === "EM_ROTA";
+
+  if (el("btnEditEquipe")) {
+    el("btnEditEquipe").disabled = emAtendimento;
+    el("btnEditEquipe").onclick = emAtendimento ? null : () => editarEquipe(eq.id);
+  }
+
   if (el("btnDeleteEquipe")) {
     el("btnDeleteEquipe").onclick = () => {
-      if (confirm(`tem certeza que deseja remover a equipe "${eq.nome_equipe}"?`)) {
+      if (confirm(`Tem certeza que deseja remover a equipe "${eq.nome_equipe}"?`)) {
         deletarEquipe(eq.id);
       }
     };
   }
 
-  if (typeof mostrarDetalhes === "function") mostrarDetalhes("equipeMedica");
+  mostrarDetalhes("equipeMedica");
 }
 
 function limparFormularioEquipe() {
   const nome = document.getElementById("inputEquipeNome");
   const condutor = document.getElementById("inputEquipeCondutor");
   const veiculo = document.getElementById("inputEquipeVeiculo");
-  const disponibilidade = document.getElementById("inputEquipeDisponibilidade");
   const membro = document.getElementById("inputEquipeMembroBuscar");
 
   if (nome) nome.value = "";
   if (condutor) condutor.value = "";
   if (veiculo) veiculo.value = "";
-  if (disponibilidade) disponibilidade.value = "";
   if (membro) membro.value = "";
 
   equipeEditandoId = null;
@@ -430,7 +420,7 @@ function limparFormularioEquipe() {
   if (btn) btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar Equipe';
 
   renderizarChipsProfissionais();
-  atualizarSelectProfissionaisEquipe();
+  atualizarSelectsEquipe();
 
   const modal = document.getElementById("equipeMedicaModal");
   if (modal) modal.classList.add("hidden");
@@ -449,29 +439,26 @@ function editarEquipe(id) {
   const eq = (typeof equipesCache !== "undefined" ? equipesCache : []).find(e => num(e.id) === num(id));
   if (!eq) return;
 
+  equipeEditandoId = eq.id;
+
   const nome = document.getElementById("inputEquipeNome");
   const condutor = document.getElementById("inputEquipeCondutor");
   const veiculo = document.getElementById("inputEquipeVeiculo");
-  const disponibilidade = document.getElementById("inputEquipeDisponibilidade");
   const membro = document.getElementById("inputEquipeMembroBuscar");
 
   if (nome) nome.value = eq.nome_equipe || "";
-  if (condutor) condutor.value = extrairId(eq.condutor) || "";
-  if (veiculo) veiculo.value = extrairId(eq.veiculo) || "";
-  if (disponibilidade) disponibilidade.value = extrairId(eq.disponibilidade) || "";
-  if (membro) membro.value = "";
-
-  equipeEditandoId = eq.id;
 
   const condutorId = extrairId(eq.condutor);
-  profissionaisSelecionadosIds = getEquipeProfissionaisIds(eq).filter(m => num(m) !== num(condutorId));
+  profissionaisSelecionadosIds = getEquipeProfissionaisIds(eq).map(id => num(id)).filter(id => id !== null);
 
-  if (!profissionaisSelecionadosIds.includes(condutor.value)) {
-    profissionaisSelecionadosIds.push(condutor.value);
-  }
+  atualizarSelectsEquipe();
 
-  atualizarSelectProfissionaisEquipe();
+  if (condutor) condutor.value = condutorId || "";
+  if (veiculo) veiculo.value = extrairId(eq.veiculo) || "";
+  if (membro) membro.value = "";
+
   renderizarChipsProfissionais();
+  atualizarSelectProfissionaisEquipe();
 
   const btn = document.getElementById("saveEquipeMedica");
   if (btn) btn.innerHTML = '<i class="ph ph-pencil-simple"></i> Atualizar Equipe';
@@ -484,7 +471,6 @@ async function salvarEquipe() {
   const nome = String(document.getElementById("inputEquipeNome")?.value || "").trim();
   const condutorId = num(document.getElementById("inputEquipeCondutor")?.value);
   const veiculoId = num(document.getElementById("inputEquipeVeiculo")?.value);
-  const disponibilidadeId = num(document.getElementById("inputEquipeDisponibilidade")?.value);
 
   const profissionaisIds = [...new Set(
     profissionaisSelecionadosIds.map(num).filter(id => id !== null)
@@ -494,22 +480,20 @@ async function salvarEquipe() {
     profissionaisIds.push(condutorId);
   }
 
-  if (!nome) return avisar("informe o nome da equipe", "warning");
-  if (!condutorId) return avisar("selecione um condutor", "warning");
-  if (!veiculoId) return avisar("selecione um veículo", "warning");
-  if (!disponibilidadeId) return avisar("selecione a disponibilidade", "warning");
-  if (profissionaisIds.length === 0) return avisar("adicione pelo menos 1 profissional", "warning");
+  if (!nome) return avisar("Informe o nome da equipe.", "warning");
+  if (!condutorId) return avisar("Selecione um condutor.", "warning");
+  if (!veiculoId) return avisar("Selecione um veículo.", "warning");
+  if (profissionaisIds.length === 0) return avisar("Adicione pelo menos 1 profissional.", "warning");
 
   if (!condutorAptoParaVeiculo(condutorId, veiculoId)) {
-    return avisar("o condutor precisa ter CNH igual ou superior à exigida pelo veículo", "error");
+    return avisar("O condutor precisa ter CNH igual ou superior à exigida pelo veículo.", "error");
   }
 
   const dados = {
     nome_equipe: nome,
     condutor: condutorId,
     profissionais: profissionaisIds,
-    veiculo: veiculoId,
-    disponibilidade: disponibilidadeId
+    veiculo: veiculoId
   };
 
   const url = equipeEditandoId
@@ -518,32 +502,60 @@ async function salvarEquipe() {
 
   const metodo = equipeEditandoId ? "PUT" : "POST";
 
-  const resposta = await fazerRequisicao(url, {
-    method: metodo,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dados)
-  });
+  try {
+    const resposta = await fazerRequisicao(url, {
+      method: metodo,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados)
+    });
 
-  if (!resposta.ok) {
-    const erro = await resposta.json();
-    const mensagem = erro?.non_field_errors?.[0] || "Erro desconhecido";
-    return avisar(mensagem, "error");
+    if (!resposta.ok) {
+      const erro = await resposta.json();
+      const mensagem = erro?.non_field_errors?.[0]
+        ?? erro?.detail
+        ?? Object.values(erro)?.[0]?.[0]
+        ?? "Erro ao salvar equipe.";
+      return avisar(mensagem, "error");
+    }
+
+    const salva = await resposta.json();
+    const eraEdicao = !!equipeEditandoId;
+    equipeEditandoId = null;
+    limparFormularioEquipe();
+    mostrarToast(eraEdicao ? "Equipe atualizada!" : "Equipe criada!", "success");
+    await carregarCacheEquipes();
+    await carregarCacheFuncionarios();
+    await carregarCacheVeiculos();
+    await carregarEquipes();
+    if (salva?.id) selecionarEquipe(salva.id);
+  } catch (e) {
+    console.error(e);
+    avisar("Erro de conexão ao salvar equipe.", "error");
   }
-
-  equipeEditandoId = null;
-  limparFormularioEquipe();
-  await carregarEquipes();
 }
 
 async function deletarEquipe(id) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS_EQUIPE.equipes}${id}/`, {
-    method: "DELETE"
-  });
+  try {
+    const resposta = await fazerRequisicao(`${ENDPOINTS_EQUIPE.equipes}${id}/`, {
+      method: "DELETE"
+    });
 
-  if (!resposta.ok) throw new Error("erro ao excluir equipe");
+    if (!resposta.ok) {
+      const erro = await resposta.json().catch(() => ({}));
+      const msg = erro?.detail ?? "Erro ao excluir equipe.";
+      return avisar(msg, "error");
+    }
 
-  if (num(equipeSelecionadaId) === num(id)) equipeSelecionadaId = null;
-  await carregarEquipes();
+    if (num(equipeSelecionadaId) === num(id)) equipeSelecionadaId = null;
+    mostrarToast("Equipe removida.", "success");
+    await carregarCacheEquipes();
+    await carregarCacheFuncionarios();
+    await carregarCacheVeiculos();
+    await carregarEquipes();
+  } catch (e) {
+    console.error(e);
+    avisar("Erro de conexão ao excluir equipe.", "error");
+  }
 }
 
 function bindEquipeEvents() {
@@ -573,7 +585,7 @@ function bindEquipeEvents() {
       if (!profissionaisSelecionadosIds.some(id => num(id) === idCondutor)) {
         profissionaisSelecionadosIds.push(idCondutor);
       }
-      
+
       renderizarChipsProfissionais();
       atualizarSelectProfissionaisEquipe();
     };
@@ -597,6 +609,7 @@ function bindEquipeEvents() {
 }
 
 window.carregarEquipes = carregarEquipes;
+window.carregarCacheEquipes = carregarCacheEquipes;
 window.selecionarEquipe = selecionarEquipe;
 window.editarEquipe = editarEquipe;
 window.deletarEquipe = deletarEquipe;

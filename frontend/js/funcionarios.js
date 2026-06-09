@@ -33,6 +33,17 @@ function getDisponibilidadeNome(disponibilidadeId) {
   return disp ? (disp.nome || disp.codigo || "-") : "-";
 }
 
+function atualizarControleDisponibilidadeFuncionario(funcionario = null) {
+  const select = document.getElementById("inputFuncDisponibilidade");
+  const hint = document.getElementById("hintFuncDisponibilidade");
+  const vinculado = funcionario?.disponibilidade_controlada || funcionario?.equipe_atribuida;
+  if (select) select.disabled = !!vinculado;
+  if (hint) {
+    hint.classList.toggle("hidden", !vinculado);
+    hint.style.display = vinculado ? "block" : "none";
+  }
+}
+
 function getTipoRegistroById(tipoRegistroId) {
   const tipos = typeof tiposRegistroCache !== "undefined" ? tiposRegistroCache : [];
   return tipos.find(t => num(t.id) === num(tipoRegistroId)) || null;
@@ -196,13 +207,11 @@ async function carregarFuncionarios(filtroCargo = null) {
 
   filtrados.forEach(f => {
     const cargo = getCargoDoFuncionario(f.matricula);
+    const dispCod = getDispCodigo(f.disponibilidade);
     const dispNome = getDisponibilidadeNome(f.disponibilidade);
+    const badgeEquipe = f.equipe_nome ? renderBadgeEquipeHtml(f.equipe_nome) : "";
 
-    const badgeStatus = dispNome.toLowerCase().includes("inativa")
-      ? `<span class="status-badge badge-maintenance"><i class="ph ph-wrench"></i> ${dispNome}</span>`
-      : dispNome.toLowerCase().includes("atend")
-        ? `<span class="status-badge badge-route"><i class="ph ph-navigation-arrow"></i> ${dispNome}</span>`
-        : `<span class="status-badge badge-available"><i class="ph ph-check-circle"></i> ${dispNome}</span>`;
+    const badgeStatus = `<span class="status-badge ${classeBadgePorCodigo(dispCod)}"><i class="ph ${iconeBadgePorCodigo(dispCod)}"></i> ${dispNome}</span>`;
 
     const cartao = document.createElement("div");
     cartao.className = "tracking-card";
@@ -214,8 +223,9 @@ async function carregarFuncionarios(filtroCargo = null) {
         <h3>${f.nome || "Sem nome"}</h3>
         ${badgeStatus}
       </div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
-        ${cargo ? cargo.nome : "Sem cargo"}
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        <span>${cargo ? cargo.nome : "Sem cargo"}</span>
+        ${badgeEquipe}
       </div>
       <div class="tc-image" style="display: flex; justify-content: center; align-items: center; padding: 1rem 0;">
         <i class="ph ph-user-circle" style="font-size: 64px; color: var(--text-muted);"></i>
@@ -253,6 +263,15 @@ function selecionarFuncionario(matricula) {
   if (el("detailFuncTelefone")) el("detailFuncTelefone").textContent = f.telefone || "-";
   if (el("detailFuncEmail")) el("detailFuncEmail").textContent = f.email || "-";
   if (el("detailFuncDisponibilidade")) el("detailFuncDisponibilidade").textContent = dispNome;
+  if (el("detailFuncEquipe")) {
+    el("detailFuncEquipe").textContent = f.equipe_nome || "Sem equipe";
+  }
+
+  if (el("detailFuncStatus")) {
+    const dispCod = getDispCodigo(f.disponibilidade);
+    el("detailFuncStatus").className = `status-badge ${classeBadgePorCodigo(dispCod)}`;
+    el("detailFuncStatus").innerHTML = `<i class="ph ${iconeBadgePorCodigo(dispCod)}"></i> ${dispNome}`;
+  }
 
   if (el("detailCnhNumero")) el("detailCnhNumero").textContent = cnh?.numero || "-";
   if (el("detailCnhCategoria")) el("detailCnhCategoria").textContent = cnh?.categoria || "-";
@@ -312,6 +331,7 @@ function limparFormularioFuncionario() {
 function abrirFuncionarioModal() {
   funcionarioEditandoId = null;
   limparFormularioFuncionario();
+  atualizarControleDisponibilidadeFuncionario(null);
   const btn = document.getElementById("saveFuncionario");
   if (btn) btn.innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar Funcionário';
   const modal = document.getElementById("funcionarioModal");
@@ -335,6 +355,7 @@ function editarFuncionario(matricula) {
   campoVal("inputFuncDisponibilidade", f.disponibilidade);
 
   funcionarioEditandoId = f.matricula;
+  atualizarControleDisponibilidadeFuncionario(f);
 
   const btn = document.getElementById("saveFuncionario");
   if (btn) btn.innerHTML = '<i class="ph ph-pencil-simple"></i> Atualizar Funcionário';
@@ -349,11 +370,19 @@ async function salvarFuncionario() {
     cpf: normalizarValorInput("inputFuncCpf"),
     data_nascimento: normalizarValorInput("inputFuncNascimento"),
     telefone: normalizarValorInput("inputFuncTelefone"),
-    email: normalizarValorInput("inputFuncEmail"),
-    disponibilidade: normalizarValorInput("inputFuncDisponibilidade")
+    email: normalizarValorInput("inputFuncEmail")
   };
 
-  console.log(normalizarValorInput("inputFuncDisponibilidade"));
+  const dispSelect = document.getElementById("inputFuncDisponibilidade");
+  if (!dispSelect?.disabled) {
+    dados.disponibilidade = normalizarValorInput("inputFuncDisponibilidade");
+  }
+
+  if (!dados.nome) return mostrarToast("Informe o nome do funcionário.", "warning");
+  if (!dados.cpf) return mostrarToast("Informe o CPF.", "warning");
+  if (!dados.disponibilidade && !funcionarioEditandoId) {
+    return mostrarToast("Selecione a disponibilidade.", "warning");
+  }
 
   const caminho = funcionarioEditandoId
     ? `${ENDPOINTS_FUNCIONARIO.funcionarios}${funcionarioEditandoId}/`
@@ -361,30 +390,50 @@ async function salvarFuncionario() {
 
   const metodo = funcionarioEditandoId ? "PUT" : "POST";
 
-  const resposta = await fazerRequisicao(caminho, {
-    method: metodo,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dados)
-  });
+  try {
+    const resposta = await fazerRequisicao(caminho, {
+      method: metodo,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados)
+    });
 
-  if (!resposta.ok) {
-    console.log(await resposta.text());
-    throw new Error("Erro ao salvar funcionário");
+    if (!resposta.ok) {
+      const erro = await resposta.json().catch(() => ({}));
+      const msg = erro?.non_field_errors?.[0]
+        ?? erro?.detail
+        ?? Object.values(erro)?.[0]?.[0]
+        ?? "Erro ao salvar funcionário.";
+      return mostrarToast(msg, "error");
+    }
+
+    const eraEdicao = !!funcionarioEditandoId;
+    funcionarioEditandoId = null;
+    limparFormularioFuncionario();
+    mostrarToast(eraEdicao ? "Funcionário atualizado!" : "Funcionário criado!", "success");
+    await carregarDependenciasFuncionarios();
+    await carregarFuncionarios();
+  } catch (e) {
+    console.error(e);
+    mostrarToast("Erro de conexão ao salvar funcionário.", "error");
   }
-
-  funcionarioEditandoId = null;
-  limparFormularioFuncionario();
-  await carregarDependenciasFuncionarios();
-  await carregarFuncionarios();
 }
 
 async function deletarFuncionario(matricula) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.funcionarios}${matricula}/`, { method: "DELETE" });
-  if (!resposta.ok) throw new Error("Erro ao excluir funcionário");
+  try {
+    const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.funcionarios}${matricula}/`, { method: "DELETE" });
+    if (!resposta.ok) {
+      const erro = await resposta.json().catch(() => ({}));
+      return mostrarToast(erro?.detail ?? "Erro ao excluir funcionário.", "error");
+    }
 
-  if (num(funcionarioSelecionadoId) === num(matricula)) funcionarioSelecionadoId = null;
-  await carregarDependenciasFuncionarios();
-  await carregarFuncionarios();
+    if (num(funcionarioSelecionadoId) === num(matricula)) funcionarioSelecionadoId = null;
+    mostrarToast("Funcionário removido.", "success");
+    await carregarDependenciasFuncionarios();
+    await carregarFuncionarios();
+  } catch (e) {
+    console.error(e);
+    mostrarToast("Erro de conexão ao excluir funcionário.", "error");
+  }
 }
 
 function limparFormularioCnh() {
@@ -458,23 +507,31 @@ async function salvarCnh() {
   });
 
   if (!resposta.ok) {
-    console.log(await resposta.text());
-    throw new Error("Erro ao salvar CNH");
+    const erro = await resposta.json().catch(() => ({}));
+    return mostrarToast(erro?.detail ?? "Erro ao salvar CNH.", "error");
   }
 
+  const eraEdicao = !!cnhEditandoId;
   cnhEditandoId = null;
   limparFormularioCnh();
+  mostrarToast(eraEdicao ? "CNH atualizada!" : "CNH salva!", "success");
   await carregarDependenciasFuncionarios();
   await carregarFuncionarios();
 }
 
 async function deletarCnh(cnhId) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.cnhs}${cnhId}/`, { method: "DELETE" });
-  if (!resposta.ok) throw new Error("Erro ao excluir CNH");
+  try {
+    const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.cnhs}${cnhId}/`, { method: "DELETE" });
+    if (!resposta.ok) return mostrarToast("Erro ao excluir CNH.", "error");
 
-  cnhEditandoId = null;
-  await carregarDependenciasFuncionarios();
-  await carregarFuncionarios();
+    cnhEditandoId = null;
+    mostrarToast("CNH removida.", "success");
+    await carregarDependenciasFuncionarios();
+    await carregarFuncionarios();
+  } catch (e) {
+    console.error(e);
+    mostrarToast("Erro de conexão ao excluir CNH.", "error");
+  }
 }
 
 function atualizarNumeroRegistroProfissional() {
@@ -593,13 +650,15 @@ async function salvarProfissionalSaude() {
   });
 
   if (!resposta.ok) {
-    console.log(await resposta.text());
-    return;
+    const erro = await resposta.json().catch(() => ({}));
+    return mostrarToast(erro?.detail ?? "Erro ao salvar registro profissional.", "error");
   }
 
   document.getElementById("registroModal").classList.add("hidden");
 
+  const eraEdicao = !!registroEditandoId;
   registroEditandoId = null;
+  mostrarToast(eraEdicao ? "Registro atualizado!" : "Registro salvo!", "success");
 
   await carregarDependenciasFuncionarios();
   await carregarFuncionarios();
@@ -610,12 +669,18 @@ async function salvarProfissionalSaude() {
 }
 
 async function deletarProfissionalSaude(profissionalId) {
-  const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.profissionaisSaude}/${profissionalId}`, { method: "DELETE" });
-  if (!resposta.ok) throw new Error("Erro ao excluir registro profissional");
+  try {
+    const resposta = await fazerRequisicao(`${ENDPOINTS_FUNCIONARIO.profissionaisSaude}${profissionalId}/`, { method: "DELETE" });
+    if (!resposta.ok) return mostrarToast("Erro ao excluir registro profissional.", "error");
 
-  registroEditandoId = null;
-  await carregarDependenciasFuncionarios();
-  await carregarFuncionarios();
+    registroEditandoId = null;
+    mostrarToast("Registro profissional removido.", "success");
+    await carregarDependenciasFuncionarios();
+    await carregarFuncionarios();
+  } catch (e) {
+    console.error(e);
+    mostrarToast("Erro de conexão ao excluir registro.", "error");
+  }
 }
 
 function initTabsFuncionarios() {

@@ -2,6 +2,17 @@ let veiculoSelecionadoPlaca = null;
 let veiculoEditandoPlaca = null;
 let disponibilidadesCache = [];
 
+function atualizarControleDisponibilidadeVeiculo(veiculo = null) {
+  const select = document.getElementById("inputDisponibilidade");
+  const hint = document.getElementById("hintVeiculoDisponibilidade");
+  const vinculado = veiculo?.disponibilidade_controlada || veiculo?.equipe_atribuida;
+  if (select) select.disabled = !!vinculado;
+  if (hint) {
+    hint.classList.toggle("hidden", !vinculado);
+    hint.style.display = vinculado ? "block" : "none";
+  }
+}
+
 
 async function carregarCacheDisponibilidades() {
   try {
@@ -54,20 +65,28 @@ async function carregarVeiculos() {
   if (!lista) return;
   lista.innerHTML = "";
 
-  veiculosCache.forEach((v, index) => {
+  veiculosCache.forEach((v) => {
     const cartao = document.createElement("div");
     cartao.className = "tracking-card";
     cartao.dataset.placa = v.placa;
     cartao.classList.toggle("selected", v.placa === veiculoSelecionadoPlaca);
 
-    const statusAtual = disponibilidadesCache.find(d => d.id === v.disponibilidade);
+    const statusAtual = disponibilidadesCache.find(d => d.id === v.disponibilidade) ?? {
+      codigo: "DISPONIVEL",
+      nome: "Disponível"
+    };
+    const dispCod = statusAtual?.codigo ?? "";
+    const badgeEquipe = v.equipe_nome ? renderBadgeEquipeHtml(v.equipe_nome) : "";
 
     cartao.innerHTML = `
       <div class="tc-header">
         <h3>${v.placa}</h3>
-        <span class="status-badge ${statusAtual.codigo}">
-          <i class="${statusAtual.codigo}"></i> ${statusAtual.nome}
+        <span class="status-badge ${classeBadgePorCodigo(dispCod)}">
+          <i class="ph ${iconeBadgePorCodigo(dispCod)}"></i> ${statusAtual?.nome ?? "-"}
         </span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;">
+        ${badgeEquipe}
       </div>
       <div class="tc-image">
         <img src="assets/ambulance.png" alt="Ambulância" />
@@ -103,8 +122,9 @@ function selecionarVeiculo(placa, statusAtual) {
   
   if (el("detailStatus")) {
     const statusEl = el("detailStatus");
-    statusEl.className = `status-badge ${statusAtual.codigo}`;
-    statusEl.innerHTML = `<i class="ph ${statusAtual.codigo}"></i> ${statusAtual.nome}`;
+    const dispCod = statusAtual?.codigo ?? "";
+    statusEl.className = `status-badge ${classeBadgePorCodigo(dispCod)}`;
+    statusEl.innerHTML = `<i class="ph ${iconeBadgePorCodigo(dispCod)}"></i> ${statusAtual?.nome ?? "-"}`;
   }
 
   if (el("detailModelo")) el("detailModelo").textContent = `${v.marca || ''} ${v.modelo || ''}`;
@@ -127,6 +147,10 @@ function selecionarVeiculo(placa, statusAtual) {
               : "-";
   }
 
+  if (el("detailVeiculoEquipe")) {
+    el("detailVeiculoEquipe").textContent = v.equipe_nome || "Sem equipe";
+  }
+
   if (el("btnEditVeiculo")) el("btnEditVeiculo").onclick = () => editarVeiculo(v.placa);
   if (el("btnDeleteVeiculo")) {
     el("btnDeleteVeiculo").onclick = () => {
@@ -142,6 +166,7 @@ function selecionarVeiculo(placa, statusAtual) {
 document.getElementById("addVeiculoBtn").onclick = () => {
   veiculoEditandoPlaca = null;
   limparFormularioVeiculo();
+  atualizarControleDisponibilidadeVeiculo(null);
   document.getElementById("saveVeiculo").innerHTML = '<i class="ph ph-floppy-disk"></i> Salvar Veículo';
   document.getElementById("veiculoModal").classList.remove("hidden");
 };
@@ -150,6 +175,7 @@ document.getElementById("cancelVeiculo").onclick = limparFormularioVeiculo;
 document.getElementById("closeVeiculoModal").onclick = limparFormularioVeiculo;
 
 document.getElementById("saveVeiculo").onclick = async () => {
+  const dispSelect = document.getElementById("inputDisponibilidade");
 
   const dados = {
     placa: obterValorInput("inputPlaca").toUpperCase(),
@@ -158,33 +184,47 @@ document.getElementById("saveVeiculo").onclick = async () => {
     categoria: obterValorInput("inputCategoria"),
     cnh_necessaria: obterValorInput("inputCnh").toUpperCase(),
     ano: Number(obterValorInput("inputAno")),
-    km: Number(obterValorInput("inputKm")),
-    disponibilidade: Number(obterValorInput("inputDisponibilidade"))
+    km: Number(obterValorInput("inputKm"))
   };
+
+  if (!dados.placa) return mostrarToast("Informe a placa do veículo.", "warning");
+  if (!dispSelect?.disabled) {
+    dados.disponibilidade = Number(obterValorInput("inputDisponibilidade"));
+  }
+  if (!dados.disponibilidade && !veiculoEditandoPlaca) {
+    return mostrarToast("Selecione a disponibilidade.", "warning");
+  }
 
   const caminho = veiculoEditandoPlaca
       ? `/veiculos/${veiculoEditandoPlaca}/`
       : `/veiculos/`;
 
-  const metodo = veiculoEditandoPlaca
-      ? "PUT"
-      : "POST";
+  const metodo = veiculoEditandoPlaca ? "PUT" : "POST";
 
-  const resposta = await fazerRequisicao(caminho, {
-    method: metodo,
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(dados)
-  });
+  try {
+    const resposta = await fazerRequisicao(caminho, {
+      method: metodo,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dados)
+    });
 
-  if (!resposta.ok) {
-    console.log(await resposta.text());
-    throw new Error("Erro ao salvar veículo");
+    if (!resposta.ok) {
+      const erro = await resposta.json().catch(() => ({}));
+      const msg = erro?.non_field_errors?.[0]
+        ?? erro?.detail
+        ?? Object.values(erro)?.[0]?.[0]
+        ?? "Erro ao salvar veículo.";
+      return mostrarToast(msg, "error");
+    }
+
+    const eraEdicao = !!veiculoEditandoPlaca;
+    limparFormularioVeiculo();
+    mostrarToast(eraEdicao ? "Veículo atualizado!" : "Veículo criado!", "success");
+    await carregarVeiculos();
+  } catch (e) {
+    console.error(e);
+    mostrarToast("Erro de conexão ao salvar veículo.", "error");
   }
-
-  limparFormularioVeiculo();
-  carregarVeiculos();
 };
 
 function limparFormularioVeiculo() {
@@ -234,6 +274,7 @@ function editarVeiculo(placa) {
   campoVal("inputDisponibilidade", v.disponibilidade);
 
   veiculoEditandoPlaca = placa;
+  atualizarControleDisponibilidadeVeiculo(v);
 
   document.getElementById("inputPlaca").disabled = true;
 
@@ -246,11 +287,16 @@ function editarVeiculo(placa) {
 async function deletarVeiculo(placa) {
   try {
     const resposta = await fazerRequisicao(`/veiculos/${placa}/`, { method: "DELETE" });
-    if (!resposta.ok) throw new Error("Erro na API");
+    if (!resposta.ok) {
+      const erro = await resposta.json().catch(() => ({}));
+      return mostrarToast(erro?.detail ?? "Erro ao excluir veículo.", "error");
+    }
+    mostrarToast("Veículo removido.", "success");
+    await carregarVeiculos();
   } catch (erro) {
-    console.warn("Backend offline.");
+    console.error(erro);
+    mostrarToast("Erro de conexão ao excluir veículo.", "error");
   }
-  carregarVeiculos();
 }
 
 // ----------------------------------------------------
@@ -382,4 +428,5 @@ async function deletarManutencao(id) {
 }
 
 window.carregarCacheVeiculos = carregarCacheVeiculos;
+window.carregarCacheDisponibilidades = carregarCacheDisponibilidades;
 window.carregarDisponibilidades = carregarDisponibilidades;

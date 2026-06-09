@@ -8,9 +8,10 @@ class Command(BaseCommand):
 
         # Disponibilidades
         disponibilidades = [
-            ("Disponível",    "DISPONIVEL"),
-            ("Indisponível",  "INDISPONIVEL"),
-            ("Em Rota",       "EM_ROTA"),
+            ("Disponível",      "DISPONIVEL"),
+            ("Indisponível",    "INDISPONIVEL"),
+            ("Em Rota",         "EM_ROTA"),
+            ("Em Atendimento",  "ATENDENDO"),
         ]
         for nome, codigo in disponibilidades:
             Disponibilidade.objects.get_or_create(codigo=codigo, defaults={"nome": nome})

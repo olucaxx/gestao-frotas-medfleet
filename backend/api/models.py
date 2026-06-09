@@ -22,7 +22,7 @@ class TipoRegistro(models.Model):
 
 class Cargo(models.Model):
     nome = models.CharField(max_length=50, unique=True)
-    tipo_registro = models.ForeignKey(TipoRegistro, on_delete=PROTECT, null=True, blank=True)
+    tipo_registro = models.ForeignKey(TipoRegistro, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.nome
@@ -39,7 +39,14 @@ class Veiculo(models.Model):
     ano = models.IntegerField()
     km = models.IntegerField(default=0, validators=[MinValueValidator(0)])
 
-    disponibilidade = models.ForeignKey(Disponibilidade,on_delete=PROTECT)
+    disponibilidade = models.ForeignKey(Disponibilidade, on_delete=PROTECT)
+    equipe_atribuida = models.ForeignKey(
+        'Equipe',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='veiculos_vinculados'
+    )
 
     def __str__(self):
         return self.placa
@@ -55,6 +62,13 @@ class Funcionario(models.Model):
     email = models.EmailField(max_length=100)
 
     disponibilidade = models.ForeignKey(Disponibilidade, on_delete=PROTECT)
+    equipe_atribuida = models.ForeignKey(
+        'Equipe',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='funcionarios_vinculados'
+    )
 
     def __str__(self):
         return self.nome
@@ -63,7 +77,7 @@ class Funcionario(models.Model):
 class Atendente(AbstractUser):
     funcionario = models.OneToOneField(
         Funcionario,
-        on_delete=PROTECT
+        on_delete=models.CASCADE
     )
 
     created_at = models.DateTimeField(
@@ -72,7 +86,7 @@ class Atendente(AbstractUser):
 
 
 class CNH(models.Model):
-    funcionario = models.OneToOneField(Funcionario, on_delete=PROTECT, related_name="cnh")
+    funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="cnh")
 
     numero = models.CharField(max_length=20, unique=True)
     categoria = models.CharField(max_length=10)
@@ -83,7 +97,7 @@ class CNH(models.Model):
 
 
 class ProfissionalSaude(models.Model):
-    funcionario = models.OneToOneField(Funcionario, on_delete=PROTECT, related_name="profissional_saude")
+    funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="profissional_saude")
 
     cargo = models.ForeignKey(Cargo, on_delete=PROTECT)
     numero_registro = models.CharField(max_length=30, blank=True, null=True)
@@ -97,7 +111,7 @@ class Equipe(models.Model):
     
     condutor = models.ForeignKey(
         Funcionario,
-        on_delete=models.CASCADE,
+        on_delete=PROTECT,
         related_name='equipes_como_condutor'
     )
     profissionais = models.ManyToManyField(
@@ -170,14 +184,14 @@ class Ocorrencia(models.Model):
 
     equipe = models.ForeignKey(
         Equipe,
-        on_delete=PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
 
     condutor = models.ForeignKey(
         Funcionario,
-        on_delete=PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="ocorrencias_como_condutor"
@@ -185,7 +199,7 @@ class Ocorrencia(models.Model):
 
     veiculo = models.ForeignKey(
         Veiculo,
-        on_delete=PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
@@ -212,13 +226,14 @@ class Ocorrencia(models.Model):
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=PROTECT,
-        related_name='ocorrencias_criadas'
+        on_delete=models.SET_NULL,
+        related_name='ocorrencias_criadas',
+        null=True
     )
 
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=PROTECT,
+        on_delete=models.SET_NULL,
         related_name='ocorrencias_atualizadas',
         null=True,
         blank=True
@@ -228,7 +243,7 @@ class Ocorrencia(models.Model):
         return f"{self.titulo} ({self.id})"
     
 class Manutencao(models.Model):
-    veiculo = models.ForeignKey(Veiculo, on_delete=models.PROTECT, related_name="manutencoes")
+    veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE, related_name="manutencoes")
     data = models.DateField()
     descricao = models.TextField(blank=True, null=True)
     custo = models.DecimalField(max_digits=10, decimal_places=2)
@@ -239,7 +254,7 @@ class Manutencao(models.Model):
 
 
 class Abastecimento(models.Model):
-    veiculo = models.ForeignKey(Veiculo, on_delete=models.PROTECT, related_name="abastecimentos")
+    veiculo = models.ForeignKey(Veiculo, on_delete=models.CASCADE, related_name="abastecimentos")
     data = models.DateField()
     quantidade_litros = models.DecimalField(max_digits=6, decimal_places=2)
     custo_total = models.DecimalField(max_digits=10, decimal_places=2)

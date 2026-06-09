@@ -252,6 +252,11 @@
                 <p>Disponibilidade</p>
                 <h4 id="detailDisponibilidade">-</h4>
               </div>
+
+              <div class="info-box">
+                <p>Equipe</p>
+                <h4 id="detailVeiculoEquipe">-</h4>
+              </div>
              </div>
 
              <div class="admin-actions">
@@ -319,11 +324,14 @@
                 </select>
               </div>
 
-              <div class="form-group">
+              <div class="form-group" id="groupVeiculoDisponibilidade">
                 <label>Disponibilidade</label>
                 <select id="inputDisponibilidade">
                   <option value="">Selecione...</option>
                 </select>
+                <small id="hintVeiculoDisponibilidade" class="form-hint hidden" style="color:var(--text-muted);font-size:12px;margin-top:6px;display:block;">
+                  Disponibilidade controlada automaticamente pela equipe vinculada.
+                </small>
               </div>
             </div>
 
@@ -417,6 +425,11 @@
               <div class="info-box">
                 <p>Disponibilidade</p>
                 <h4 id="detailFuncDisponibilidade">-</h4>
+              </div>
+
+              <div class="info-box">
+                <p>Equipe</p>
+                <h4 id="detailFuncEquipe">-</h4>
               </div>
 
             </div>
@@ -565,13 +578,16 @@
                 />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" id="groupFuncDisponibilidade">
                 <label>Disponibilidade</label>
                 <select id="inputFuncDisponibilidade">
                   <option value="">
                     Selecione...
                   </option>
                 </select>
+                <small id="hintFuncDisponibilidade" class="form-hint hidden" style="color:var(--text-muted);font-size:12px;margin-top:6px;display:block;">
+                  Disponibilidade controlada automaticamente pela equipe vinculada.
+                </small>
               </div>
 
             </div>
@@ -866,9 +882,9 @@
               </div>
 
               <div class="form-group full-width">
-                <label>Equipe / Motorista (Opcional)</label>
+                <label>Equipe</label>
                 <select id="inputOcorrenciaEquipe">
-                  <option value="">Selecione a equipe ou profissional...</option>
+                  <option value="">Sem equipe (atribuir depois)...</option>
                 </select>
               </div>
 
@@ -888,35 +904,6 @@
         </div>
       </div>
 
-      <div id="statusOcorrenciaModal" class="modal-overlay hidden">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 id="statusOcorrenciaModalTitle">Atualizar status da ocorrência</h3>
-            <button class="close-modal-btn" id="closeStatusOcorrenciaModal"><i class="ph ph-x"></i></button>
-          </div>
-
-          <div class="modal-body form-grid">
-            <div class="form-group full-width" id="statusOcorrenciaAtendimentoGroup">
-              <label>Horário de Atendimento</label>
-              <input type="datetime-local" id="inputOcorrenciaHorarioAtendimento" />
-            </div>
-
-            <div class="form-group full-width hidden" id="statusOcorrenciaChegadaGroup">
-              <label>Horário de Chegada ao Hospital</label>
-              <input type="datetime-local" id="inputOcorrenciaHorarioChegadaHospital" />
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button id="cancelStatusOcorrencia" class="btn-outline-danger">Cancelar</button>
-            <button id="confirmStatusOcorrencia" class="btn-primary"><i class="ph ph-check-circle"></i> Confirmar</button>
-          </div>
-        </div>
-      </div>
-                Ocorrência</button>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section id="manutencoesPage" class="page">
@@ -1092,13 +1079,6 @@
                 </select>
               </div>
 
-              <div class="form-group">
-                <label>Disponibilidade</label>
-                <select id="inputEquipeDisponibilidade">
-                  <option value="">selecione...</option>
-                </select>
-              </div>
-
               <div class="form-group full-width">
                 <label>Adicionar Profissional</label>
                 <select id="inputEquipeMembroBuscar">
@@ -1128,14 +1108,14 @@
     </main>
   </div>
 
+  <div id="toastContainer" class="toast-container"></div>
+
   <script src="./js/main.js"></script>
   <script src="./js/dashboard.js"></script>
   <script src="./js/veiculos.js"></script>
   <script src="./js/funcionarios.js"></script>
   <script src="./js/ocorrencias.js"></script>
   <script src="./js/equipe_medica.js"></script>
-
-  <div id="toastContainer" class="toast-container"></div>
 </body>
 
 </html>

@@ -85,6 +85,7 @@ function carregarLinhaTempo() {
     let classeIcone = "timeline-icon-green";
     if      (dCod === "EM_ROTA")       { icone = "ph-navigation-arrow"; classeIcone = "timeline-icon-blue";   }
     else if (dCod === "INDISPONIVEL")  { icone = "ph-wrench";           classeIcone = "timeline-icon-yellow"; }
+    else if (dCod === "ATENDENDO")     { icone = "ph-first-aid";        classeIcone = "timeline-icon-blue"; }
 
     eventos.push({
       titulo:      `Ambulância: ${v.placa}`,
@@ -142,7 +143,10 @@ async function carregarDashboard() {
 
     // ── Veículos ───────────────────────────────────────────────────────────
     const totalVeic        = veiculosCache.length;
-    const emRotaVeic       = veiculosCache.filter(v => _dispCod(v.disponibilidade) === "EM_ROTA").length;
+    const emRotaVeic       = veiculosCache.filter(v => {
+      const cod = _dispCod(v.disponibilidade);
+      return cod === "EM_ROTA" || cod === "ATENDENDO";
+    }).length;
     const operacionaisVeic = veiculosCache.filter(v => _dispCod(v.disponibilidade) !== "INDISPONIVEL").length;
 
     // ── Funcionários ───────────────────────────────────────────────────────

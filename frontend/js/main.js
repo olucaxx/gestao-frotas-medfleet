@@ -189,6 +189,7 @@ function mostrarToast(message, type = "success") {
     success: "ph-check-circle",
     warning: "ph-warning-circle",
     error: "ph-x-circle",
+    info: "ph-info",
     emergency: "ph-x-circle"
   };
 
@@ -207,3 +208,84 @@ function mostrarToast(message, type = "success") {
     setTimeout(() => toast.remove(), 400);
   }, 4000);
 }
+
+window.mostrarToast = mostrarToast;
+
+const COD_DISPONIVEL = "DISPONIVEL";
+
+function numId(valor) {
+  const n = Number(valor);
+  return Number.isNaN(n) ? null : n;
+}
+
+function getDispCodigo(disponibilidadeId) {
+  const disp = (disponibilidadesCache || []).find(d => numId(d.id) === numId(disponibilidadeId));
+  return disp?.codigo ?? "";
+}
+
+function getEquipeById(equipeId) {
+  return (equipesCache || []).find(e => numId(e.id) === numId(equipeId)) ?? null;
+}
+
+function funcionarioElegivelParaEquipe(funcionario, equipeEditandoId = null) {
+  if (!funcionario) return false;
+  const equipeAtual = numId(funcionario.equipe_atribuida);
+  if (equipeEditandoId && equipeAtual === numId(equipeEditandoId)) return true;
+  if (equipeAtual !== null) return false;
+  return getDispCodigo(funcionario.disponibilidade) === COD_DISPONIVEL;
+}
+
+function veiculoElegivelParaEquipe(veiculo, equipeEditandoId = null) {
+  if (!veiculo) return false;
+  const equipeAtual = numId(veiculo.equipe_atribuida);
+  if (equipeEditandoId && equipeAtual === numId(equipeEditandoId)) return true;
+  if (equipeAtual !== null) return false;
+  return getDispCodigo(veiculo.disponibilidade) === COD_DISPONIVEL;
+}
+
+function equipeElegivelParaOcorrencia(equipe, ocorrenciaEditandoId = null) {
+  if (!equipe) return false;
+  if (getDispCodigo(equipe.disponibilidade) !== COD_DISPONIVEL) return false;
+  const ativa = (ocorrenciasCache || []).some(o => {
+    if (ocorrenciaEditandoId && numId(o.id) === numId(ocorrenciaEditandoId)) return false;
+    if (numId(o.equipe) !== numId(equipe.id)) return false;
+    const cod = (statusCache || []).find(s => numId(s.id) === numId(o.status))?.codigo ?? "";
+    return cod === "AGUARDANDO" || cod === "EM_ATENDIMENTO";
+  });
+  return !ativa;
+}
+
+function renderBadgeEquipeHtml(equipeNome) {
+  if (!equipeNome) return "";
+  return `<span class="status-badge badge-equipe"><i class="ph ph-users-four"></i> ${equipeNome}</span>`;
+}
+
+function classeBadgePorCodigo(codigo) {
+  const map = {
+    DISPONIVEL: "badge-available",
+    INDISPONIVEL: "badge-maintenance",
+    EM_ROTA: "badge-route",
+    ATENDENDO: "badge-route"
+  };
+  return map[codigo] ?? "badge-available";
+}
+
+function iconeBadgePorCodigo(codigo) {
+  const map = {
+    DISPONIVEL: "ph-check-circle",
+    INDISPONIVEL: "ph-wrench",
+    EM_ROTA: "ph-navigation-arrow",
+    ATENDENDO: "ph-first-aid"
+  };
+  return map[codigo] ?? "ph-check-circle";
+}
+
+window.numId = numId;
+window.getDispCodigo = getDispCodigo;
+window.getEquipeById = getEquipeById;
+window.funcionarioElegivelParaEquipe = funcionarioElegivelParaEquipe;
+window.veiculoElegivelParaEquipe = veiculoElegivelParaEquipe;
+window.equipeElegivelParaOcorrencia = equipeElegivelParaOcorrencia;
+window.renderBadgeEquipeHtml = renderBadgeEquipeHtml;
+window.classeBadgePorCodigo = classeBadgePorCodigo;
+window.iconeBadgePorCodigo = iconeBadgePorCodigo;
