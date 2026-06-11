@@ -41,6 +41,16 @@ class VeiculoViewSet(viewsets.ModelViewSet):
     queryset = Veiculo.objects.all()
     serializer_class = VeiculoSerializer
     lookup_field = "placa"
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    def get_queryset(self):
+        qs = Veiculo.objects.filter(ativo=True)
+        return qs
 
 
 class FuncionarioViewSet(viewsets.ModelViewSet):
@@ -49,6 +59,15 @@ class FuncionarioViewSet(viewsets.ModelViewSet):
     )
 
     serializer_class = FuncionarioSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    def get_queryset(self):
+        return Funcionario.objects.filter(ativo=True)
 
 
 class CNHViewSet(viewsets.ModelViewSet):
@@ -57,6 +76,12 @@ class CNHViewSet(viewsets.ModelViewSet):
     )
 
     serializer_class = CNHSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProfissionalSaudeViewSet(viewsets.ModelViewSet):
@@ -147,7 +172,19 @@ class AtendenteViewSet(viewsets.ModelViewSet):
 class ManutencaoViewSet(viewsets.ModelViewSet):
     queryset = Manutencao.objects.select_related("veiculo")
     serializer_class = ManutencaoSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class AbastecimentoViewSet(viewsets.ModelViewSet):
     queryset = Abastecimento.objects.select_related("veiculo")
     serializer_class = AbastecimentoSerializer
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

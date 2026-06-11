@@ -47,9 +47,21 @@ class Veiculo(models.Model):
         blank=True,
         related_name='veiculos_vinculados'
     )
+    
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.placa
+    
+    def delete(self, *args, **kwargs):
+        self.ativo = False
+        self.save()
+        
+        for manutencao in self.manutencoes.all():
+            manutencao.delete()
+            
+        for abastecimento in self.abastecimentos.all():
+            abastecimento.delete()
 
 
 class Funcionario(models.Model):
@@ -69,20 +81,36 @@ class Funcionario(models.Model):
         blank=True,
         related_name='funcionarios_vinculados'
     )
+    
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome
+    
+    def delete(self, *args, **kwargs):
+        self.ativo = False
+        self.save()
+        
+        self.cnh.delete()
+        
+        if hasattr(self, "atendente"):
+            self.atendente.delete()
     
     
 class Atendente(AbstractUser):
     funcionario = models.OneToOneField(
         Funcionario,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        related_name='atendente'
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True
     )
+    
+    def delete(self, *args, **kwargs):
+        self.is_active = False
+        self.save()
 
 
 class CNH(models.Model):
@@ -91,9 +119,15 @@ class CNH(models.Model):
     numero = models.CharField(max_length=20, unique=True)
     categoria = models.CharField(max_length=10)
     validade = models.DateField()
+    
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.funcionario.nome} - {self.numero}"
+    
+    def delete(self, *args, **kwargs):
+        self.ativo = False
+        self.save()
 
 
 class ProfissionalSaude(models.Model):
@@ -121,9 +155,15 @@ class Equipe(models.Model):
     
     veiculo = models.ForeignKey(Veiculo, on_delete=PROTECT)
     disponibilidade = models.ForeignKey(Disponibilidade, on_delete=PROTECT)
+    
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nome_equipe
+    
+    def delete(self, *args, **kwargs):
+        self.ativo = False
+        self.save()
     
     
 class Prioridade(models.Model):
@@ -248,9 +288,15 @@ class Manutencao(models.Model):
     descricao = models.TextField(blank=True, null=True)
     custo = models.DecimalField(max_digits=10, decimal_places=2)
     oficina = models.CharField(max_length=150, blank=True, null=True)
+    
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Manutenção - {self.veiculo.placa} - {self.descricao} ({self.id})"
+    
+    def delete(self, *args, **kwargs):
+        self.ativo = False
+        self.save()
 
 
 class Abastecimento(models.Model):
@@ -259,7 +305,13 @@ class Abastecimento(models.Model):
     quantidade_litros = models.DecimalField(max_digits=6, decimal_places=2)
     custo_total = models.DecimalField(max_digits=10, decimal_places=2)
     tipo_combustivel = models.CharField(max_length=50)
+    
+    ativo = models.BooleanField(default=True)
 
     def __str__(self):
         return f"Abastecimento - {self.veiculo.placa} - {self.data} ({self.id})" 
+    
+    def delete(self, *args, **kwargs):
+        self.ativo = False
+        self.save()
     

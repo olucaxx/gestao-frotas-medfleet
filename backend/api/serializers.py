@@ -23,6 +23,7 @@ from .services import disponibilidade as disp_svc
 
 
 class VeiculoSerializer(serializers.ModelSerializer):
+    queryset = Veiculo.objects.filter(ativo=True)
     equipe_nome = serializers.SerializerMethodField()
     disponibilidade_controlada = serializers.SerializerMethodField()
 
@@ -51,6 +52,7 @@ class VeiculoSerializer(serializers.ModelSerializer):
 
 
 class FuncionarioSerializer(serializers.ModelSerializer):
+    queryset = Veiculo.objects.filter(ativo=True)
     equipe_nome = serializers.SerializerMethodField()
     disponibilidade_controlada = serializers.SerializerMethodField()
 

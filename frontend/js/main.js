@@ -7,13 +7,26 @@ const API = "http://127.0.0.1:8000/api";
 
 // Função para requisições com autenticação
 async function fazerRequisicao(caminho, opcoes = {}) {
-  const token = localStorage.getItem("token");
-  if (!opcoes.headers) opcoes.headers = {};
-  if (token) {
-    opcoes.headers["Authorization"] = `Token ${token}`;
-  }
-  return fetch(API + caminho, opcoes);
+    const token = localStorage.getItem("token");
+
+    if (!opcoes.headers) {
+        opcoes.headers = {};
+    }
+
+    if (token) {
+        opcoes.headers["Authorization"] = `Token ${token}`;
+    }
+
+    const response = await fetch(API + caminho, opcoes);
+
+    if (response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+    }
+
+    return response;
 }
+
 window.fazerRequisicao = fazerRequisicao;
 
 // IDs de edição e cache local temporário
@@ -236,7 +249,7 @@ function funcionarioElegivelParaEquipe(funcionario, equipeEditandoId = null) {
 
 function veiculoElegivelParaEquipe(veiculo, equipeEditandoId = null) {
   if (!veiculo) return false;
-  const equipeAtual = numId(veiculo.equipe_atribuida);
+  const equipeAtual = numId(veiculo.equipe_atribuidae2);
   if (equipeEditandoId && equipeAtual === numId(equipeEditandoId)) return true;
   if (equipeAtual !== null) return false;
   return getDispCodigo(veiculo.disponibilidade) === COD_DISPONIVEL;
