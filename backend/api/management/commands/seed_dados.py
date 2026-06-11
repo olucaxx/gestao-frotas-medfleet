@@ -12,6 +12,7 @@ class Command(BaseCommand):
             ("Indisponível",    "INDISPONIVEL"),
             ("Em Rota",         "EM_ROTA"),
             ("Em Atendimento",  "ATENDENDO"),
+            ("Em Manutenção",   "EM_MANUTENCAO"),
         ]
         for nome, codigo in disponibilidades:
             Disponibilidade.objects.get_or_create(codigo=codigo, defaults={"nome": nome})
@@ -22,7 +23,7 @@ class Command(BaseCommand):
             TipoRegistro.objects.get_or_create(sigla=sigla)
 
         # Cargos
-        crm   = TipoRegistro.objects.get(sigla="CRM")   
+        crm   = TipoRegistro.objects.get(sigla="CRM")
         coren = TipoRegistro.objects.get(sigla="COREN")
 
         Cargo.objects.get_or_create(nome="Médico",     defaults={"tipo_registro": crm})
@@ -30,7 +31,7 @@ class Command(BaseCommand):
         Cargo.objects.get_or_create(nome="Motorista",  defaults={"tipo_registro": None})
 
         # Prioridades
-        prioridades = [ 
+        prioridades = [
             ("Emergência",    "VERMELHO"),
             ("Muito Urgente", "LARANJA"),
             ("Urgente",       "AMARELO"),

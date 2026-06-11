@@ -13,6 +13,7 @@ COD_DISPONIVEL = "DISPONIVEL"
 COD_INDISPONIVEL = "INDISPONIVEL"
 COD_ATENDENDO = "ATENDENDO"
 COD_EM_ROTA = "EM_ROTA"
+COD_EM_MANUTENCAO = "EM_MANUTENCAO"
 
 STATUS_ATIVOS = ("AGUARDANDO", "EM_ATENDIMENTO")
 
@@ -199,3 +200,54 @@ def vincular_ocorrencia_a_equipe(ocorrencia, equipe):
 
 def membro_vinculado_a_equipe(obj):
     return obj.equipe_atribuida_id is not None
+
+
+# ─── Manutenção ───────────────────────────────────────────────────────────────
+
+def veiculo_em_manutencao(veiculo):
+    """Retorna True se o veículo possui pelo menos uma manutenção ativa."""
+    return veiculo.manutencoes.filter(
+        status='EM_MANUTENCAO', ativo=True
+    ).exists()
+
+
+def iniciar_manutencao_veiculo(veiculo):
+    """
+    Coloca o veículo em manutenção:
+    - Remove o veículo da equipe (se houver), mantendo os membros como DISPONIVEL
+    - Altera a disponibilidade do veículo para EM_MANUTENCAO
+    """
+    # Desvincula da equipe sem marcar membros como indisponíveis
+    equipe = veiculo.equipe_atribuida
+    if equipe is not None:
+        veiculo.equipe_atribuida = None
+        veiculo.save(update_fields=["equipe_atribuida"])
+        # Sinaliza equipe como indisponível por falta do veículo
+        verificar_integridade_equipe(equipe)
+
+    disp_manut = _get_disp(COD_EM_MANUTENCAO)
+    veiculo.disponibilidade = disp_manut
+    veiculo.save(update_fields=["disponibilidade"])
+
+
+def finalizar_manutencao_veiculo(veiculo):
+    """
+    Chamado ao finalizar uma manutenção.
+    Se não restar nenhuma manutenção ativa, restaura a disponibilidade para DISPONIVEL.
+    """
+    ainda_em_manutencao = veiculo.manutencoes.filter(
+        status='EM_MANUTENCAO', ativo=True
+    ).exists()
+
+    if not ainda_em_manutencao:
+        disp_disponivel = _get_disp(COD_DISPONIVEL)
+        veiculo.disponibilidade = disp_disponivel
+        veiculo.save(update_fields=["disponibilidade"])
+
+
+def disponibilidade_veiculo_bloqueada(veiculo):
+    """
+    Retorna True se a disponibilidade do veículo está sob controle automático
+    (equipe vinculada OU manutenção ativa).
+    """
+    return membro_vinculado_a_equipe(veiculo) or veiculo_em_manutencao(veiculo)

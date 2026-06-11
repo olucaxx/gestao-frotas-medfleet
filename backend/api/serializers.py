@@ -18,12 +18,13 @@ from .models import (
     Atendente,
     Manutencao,
     Abastecimento,
+    STATUS_MANUTENCAO_EM,
+    STATUS_MANUTENCAO_FINALIZADA,
 )
 from .services import disponibilidade as disp_svc
 
 
 class VeiculoSerializer(serializers.ModelSerializer):
-    queryset = Veiculo.objects.filter(ativo=True)
     equipe_nome = serializers.SerializerMethodField()
     disponibilidade_controlada = serializers.SerializerMethodField()
     disponibilidade = serializers.PrimaryKeyRelatedField(
@@ -40,16 +41,16 @@ class VeiculoSerializer(serializers.ModelSerializer):
         return obj.equipe_atribuida.nome_equipe if obj.equipe_atribuida else None
 
     def get_disponibilidade_controlada(self, obj):
-        return disp_svc.membro_vinculado_a_equipe(obj)
+        return disp_svc.disponibilidade_veiculo_bloqueada(obj)
 
     def validate(self, data):
         instance = self.instance
         nova_disp = data.get('disponibilidade')
 
-        if instance and disp_svc.membro_vinculado_a_equipe(instance):
+        if instance and disp_svc.disponibilidade_veiculo_bloqueada(instance):
             if nova_disp and nova_disp != instance.disponibilidade:
                 raise serializers.ValidationError(
-                    "disponibilidade de veiculo vinculado a equipe e controlada automaticamente"
+                    "disponibilidade de veiculo bloqueada (vinculado a equipe ou em manutencao)"
                 )
 
         return data
@@ -62,7 +63,6 @@ class VeiculoSerializer(serializers.ModelSerializer):
 
 
 class FuncionarioSerializer(serializers.ModelSerializer):
-    queryset = Veiculo.objects.filter(ativo=True)
     equipe_nome = serializers.SerializerMethodField()
     disponibilidade_controlada = serializers.SerializerMethodField()
     disponibilidade = serializers.PrimaryKeyRelatedField(
@@ -425,15 +425,72 @@ class AtendenteSerializer(serializers.ModelSerializer):
 
 class ManutencaoSerializer(serializers.ModelSerializer):
     veiculo_placa = serializers.CharField(source="veiculo.placa", read_only=True)
-    
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
     class Meta:
         model = Manutencao
         fields = '__all__'
+        # status is writable only via the dedicated finalizar action
+        read_only_fields = ['status', 'veiculo_placa', 'status_display']
+
+    def validate(self, data):
+        # Não permite edição após criação — apenas POST é válido neste serializer
+        if self.instance is not None:
+            raise serializers.ValidationError(
+                "manutencao nao pode ser editada apos criacao"
+            )
+        return data
+
+    def create(self, validated_data):
+        veiculo = validated_data['veiculo']
+
+        # Inicia o processo de manutenção no veículo
+        disp_svc.iniciar_manutencao_veiculo(veiculo)
+
+        # Recarrega o veículo para garantir estado atualizado
+        validated_data['veiculo'].refresh_from_db()
+
+        return super().create(validated_data)
+
+
+class ManutencaoFinalizarSerializer(serializers.ModelSerializer):
+    """Serializer exclusivo para a ação de finalizar uma manutenção."""
+
+    class Meta:
+        model = Manutencao
+        fields = ['id', 'status', 'veiculo_placa', 'status_display']
+        read_only_fields = ['id', 'veiculo_placa', 'status_display']
+
+    veiculo_placa = serializers.CharField(source="veiculo.placa", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    def validate(self, data):
+        if self.instance.status == STATUS_MANUTENCAO_FINALIZADA:
+            raise serializers.ValidationError("manutencao ja finalizada")
+        return data
+
+    def update(self, instance, validated_data):
+        instance.status = STATUS_MANUTENCAO_FINALIZADA
+        instance.save(update_fields=['status'])
+
+        # Verifica se pode liberar o veículo
+        disp_svc.finalizar_manutencao_veiculo(instance.veiculo)
+
+        return instance
 
 
 class AbastecimentoSerializer(serializers.ModelSerializer):
     veiculo_placa = serializers.CharField(source="veiculo.placa", read_only=True)
-    
+
     class Meta:
         model = Abastecimento
         fields = '__all__'
+        read_only_fields = ['veiculo_placa']
+
+    def validate(self, data):
+        # Abastecimento é apenas registro histórico — sem edição
+        if self.instance is not None:
+            raise serializers.ValidationError(
+                "abastecimento nao pode ser editado apos criacao"
+            )
+        return data

@@ -274,20 +274,22 @@ function renderBadgeEquipeHtml(equipeNome) {
 
 function classeBadgePorCodigo(codigo) {
   const map = {
-    DISPONIVEL: "badge-available",
-    INDISPONIVEL: "badge-maintenance",
-    EM_ROTA: "badge-route",
-    ATENDENDO: "badge-route"
+    DISPONIVEL:    "badge-available",
+    INDISPONIVEL:  "badge-maintenance",
+    EM_ROTA:       "badge-route",
+    ATENDENDO:     "badge-route",
+    EM_MANUTENCAO: "badge-maintenance",
   };
   return map[codigo] ?? "badge-available";
 }
 
 function iconeBadgePorCodigo(codigo) {
   const map = {
-    DISPONIVEL: "ph-check-circle",
-    INDISPONIVEL: "ph-wrench",
-    EM_ROTA: "ph-navigation-arrow",
-    ATENDENDO: "ph-first-aid"
+    DISPONIVEL:    "ph-check-circle",
+    INDISPONIVEL:  "ph-wrench",
+    EM_ROTA:       "ph-navigation-arrow",
+    ATENDENDO:     "ph-first-aid",
+    EM_MANUTENCAO: "ph-wrench",
   };
   return map[codigo] ?? "ph-check-circle";
 }
