@@ -26,6 +26,10 @@ class VeiculoSerializer(serializers.ModelSerializer):
     queryset = Veiculo.objects.filter(ativo=True)
     equipe_nome = serializers.SerializerMethodField()
     disponibilidade_controlada = serializers.SerializerMethodField()
+    disponibilidade = serializers.PrimaryKeyRelatedField(
+        queryset=Disponibilidade.objects.all(),
+        required=False
+    )
 
     class Meta:
         model = Veiculo
@@ -50,11 +54,21 @@ class VeiculoSerializer(serializers.ModelSerializer):
 
         return data
 
+    def create(self, validated_data):
+        validated_data['disponibilidade'] = Disponibilidade.objects.get(
+            codigo=disp_svc.COD_DISPONIVEL
+        )
+        return super().create(validated_data)
+
 
 class FuncionarioSerializer(serializers.ModelSerializer):
     queryset = Veiculo.objects.filter(ativo=True)
     equipe_nome = serializers.SerializerMethodField()
     disponibilidade_controlada = serializers.SerializerMethodField()
+    disponibilidade = serializers.PrimaryKeyRelatedField(
+        queryset=Disponibilidade.objects.all(),
+        required=False
+    )
 
     class Meta:
         model = Funcionario
@@ -78,6 +92,12 @@ class FuncionarioSerializer(serializers.ModelSerializer):
                 )
 
         return data
+
+    def create(self, validated_data):
+        validated_data['disponibilidade'] = Disponibilidade.objects.get(
+            codigo=disp_svc.COD_DISPONIVEL
+        )
+        return super().create(validated_data)
 
 
 class CNHSerializer(serializers.ModelSerializer):
@@ -404,12 +424,16 @@ class AtendenteSerializer(serializers.ModelSerializer):
 
 
 class ManutencaoSerializer(serializers.ModelSerializer):
+    veiculo_placa = serializers.CharField(source="veiculo.placa", read_only=True)
+    
     class Meta:
         model = Manutencao
         fields = '__all__'
 
 
 class AbastecimentoSerializer(serializers.ModelSerializer):
+    veiculo_placa = serializers.CharField(source="veiculo.placa", read_only=True)
+    
     class Meta:
         model = Abastecimento
         fields = '__all__'

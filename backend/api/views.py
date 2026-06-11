@@ -50,6 +50,10 @@ class VeiculoViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         qs = Veiculo.objects.filter(ativo=True)
+
+        if self.request.query_params.get('disponivel') == 'true':
+            qs = qs.filter(disponibilidade__codigo=disp_svc.COD_DISPONIVEL)
+
         return qs
 
 
@@ -67,7 +71,12 @@ class FuncionarioViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
     def get_queryset(self):
-        return Funcionario.objects.filter(ativo=True)
+        qs = Funcionario.objects.filter(ativo=True)
+
+        if self.request.query_params.get('disponivel') == 'true':
+            qs = qs.filter(disponibilidade__codigo=disp_svc.COD_DISPONIVEL)
+
+        return qs
 
 
 class CNHViewSet(viewsets.ModelViewSet):
@@ -104,6 +113,14 @@ class EquipeViewSet(viewsets.ModelViewSet):
     )
 
     serializer_class = EquipeSerializer
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        if self.request.query_params.get('disponivel') == 'true':
+            qs = qs.filter(disponibilidade__codigo=disp_svc.COD_DISPONIVEL)
+
+        return qs
 
     def destroy(self, request, *args, **kwargs):
         equipe = self.get_object()

@@ -118,6 +118,30 @@ def finalizar_atendimento_equipe(equipe):
     sincronizar_membros_equipe(equipe)
 
 
+def verificar_integridade_equipe(equipe):
+    """
+    Verifica se a equipe ainda possui condutor e veiculo ativos.
+    Caso um deles tenha sido removido/inativado, marca a equipe
+    como INDISPONIVEL e sincroniza os membros restantes.
+    """
+    equipe.refresh_from_db()
+
+    condutor_ativo = Funcionario.objects.filter(
+        pk=equipe.condutor_id, ativo=True
+    ).exists()
+
+    veiculo_ativo = Veiculo.objects.filter(
+        pk=equipe.veiculo_id, ativo=True
+    ).exists()
+
+    if not condutor_ativo or not veiculo_ativo:
+        if equipe.disponibilidade.codigo != COD_INDISPONIVEL:
+            equipe.disponibilidade = _get_disp(COD_INDISPONIVEL)
+            equipe.save(update_fields=["disponibilidade"])
+
+    sincronizar_membros_equipe(equipe)
+
+
 def funcionario_elegivel_selecao(funcionario, equipe_edicao=None):
     if equipe_edicao and funcionario.equipe_atribuida_id == equipe_edicao.id:
         return True, None

@@ -63,6 +63,14 @@ class Veiculo(models.Model):
         for abastecimento in self.abastecimentos.all():
             abastecimento.delete()
 
+        equipe = self.equipe_atribuida
+        if equipe is not None:
+            self.equipe_atribuida = None
+            self.save(update_fields=["equipe_atribuida"])
+
+            from api.services import disponibilidade as disp_svc
+            disp_svc.verificar_integridade_equipe(equipe)
+
 
 class Funcionario(models.Model):
     matricula = models.BigAutoField(primary_key=True)
@@ -95,6 +103,16 @@ class Funcionario(models.Model):
         
         if hasattr(self, "atendente"):
             self.atendente.delete()
+
+        equipe = self.equipe_atribuida
+        if equipe is not None:
+            self.equipe_atribuida = None
+            self.save(update_fields=["equipe_atribuida"])
+
+            equipe.profissionais.remove(self)
+
+            from api.services import disponibilidade as disp_svc
+            disp_svc.verificar_integridade_equipe(equipe)
     
     
 class Atendente(AbstractUser):
@@ -314,4 +332,3 @@ class Abastecimento(models.Model):
     def delete(self, *args, **kwargs):
         self.ativo = False
         self.save()
-    

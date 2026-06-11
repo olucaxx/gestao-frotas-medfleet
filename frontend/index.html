@@ -221,7 +221,23 @@
             </div>
           </div>
 
-          <div class="details-content">
+          <div class="details-tabs">
+            <button class="tab active" data-tab="infoVeiculo">
+              Informações
+            </button>
+
+            <button class="tab" data-tab="manutencaoVeiculo">
+              Manutenção
+            </button>
+
+            <button class="tab" data-tab="abastecimentoVeiculo">
+              Abastecimento
+            </button>
+          </div>
+
+          <!-- informações -->
+          <div class="details-content tab-content active" id="infoVeiculo">
+
              <div class="large-vehicle-image">
                <img src="assets/ambulance.png" alt="Ambulância em foco" />
              </div>
@@ -264,7 +280,33 @@
                <button class="btn-outline-danger" id="btnDeleteVeiculo"><i class="ph ph-trash"></i> Remover Veículo</button>
              </div>
           </div>
-        </div>
+
+          <!-- manutenção -->
+          <div class="details-content tab-content hidden" id="manutencaoVeiculo">
+
+            <div class="admin-actions" style="margin-top:0;border-top:none;padding-top:0;justify-content:flex-end;">
+              <button class="btn-primary" id="btnAddManutencao">
+                <i class="ph ph-plus-circle"></i> Nova Manutenção
+              </button>
+            </div>
+
+            <div id="veiculoManutencoesList" style="display:flex;flex-direction:column;gap:10px;margin-top:16px;"></div>
+
+          </div>
+
+          <!-- abastecimento -->
+          <div class="details-content tab-content hidden" id="abastecimentoVeiculo">
+
+            <div class="admin-actions" style="margin-top:0;border-top:none;padding-top:0;justify-content:flex-end;">
+              <button class="btn-primary" id="btnAddAbastecimento">
+                <i class="ph ph-plus-circle"></i> Novo Abastecimento
+              </button>
+            </div>
+
+            <div id="veiculoAbastecimentosList" style="display:flex;flex-direction:column;gap:10px;margin-top:16px;"></div>
+
+          </div>
+      </div>
       </div>
 
         
@@ -338,6 +380,87 @@
             <div class="modal-footer">
               <button id="cancelVeiculo" class="btn-outline-danger">Cancelar</button>
               <button id="saveVeiculo" class="btn-primary"><i class="ph ph-floppy-disk"></i> Salvar Veículo</button>
+            </div>
+          </div>
+        </div>
+
+        
+        <div id="manutencaoModal" class="modal-overlay hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3><i class="ph ph-wrench"></i> Manutenção</h3>
+              <button class="close-modal-btn" id="closeManutencaoModal"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="modal-body form-grid">
+              <div class="form-group">
+                <label>Data</label>
+                <input id="inputManutData" type="date" />
+              </div>
+
+              <div class="form-group">
+                <label>Custo (R$)</label>
+                <input id="inputManutCusto" type="number" step="0.01" placeholder="0,00" />
+              </div>
+
+              <div class="form-group full-width">
+                <label>Oficina</label>
+                <input id="inputManutOficina" placeholder="Nome da oficina" />
+              </div>
+
+              <div class="form-group full-width">
+                <label>Descrição</label>
+                <textarea id="inputManutDescricao" rows="3"
+                  style="width:100%;padding:12px;border:1px solid var(--border);border-radius:12px;font-family:'Inter',sans-serif;resize:vertical;"
+                  placeholder="Descreva o serviço realizado..."></textarea>
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button id="cancelManutencaoModal" class="btn-outline-danger">Cancelar</button>
+              <button id="saveManutencaoModal" class="btn-primary"><i class="ph ph-floppy-disk"></i> Salvar</button>
+            </div>
+          </div>
+        </div>
+
+        
+        <div id="abastecimentoModal" class="modal-overlay hidden">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3><i class="ph ph-gas-pump"></i> Abastecimento</h3>
+              <button class="close-modal-btn" id="closeAbastecimentoModal"><i class="ph ph-x"></i></button>
+            </div>
+
+            <div class="modal-body form-grid">
+              <div class="form-group">
+                <label>Data</label>
+                <input id="inputAbastData" type="date" />
+              </div>
+
+              <div class="form-group">
+                <label>Tipo de Combustível</label>
+                <select id="inputAbastTipo">
+                  <option value="">Selecione</option>
+                  <option value="etanol">Etanol</option>
+                  <option value="gasolina">Gasolina</option>
+                  <option value="diesel">Diesel</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Litros</label>
+                <input id="inputAbastLitros" type="number" step="0.01" placeholder="0,00" />
+              </div>
+
+              <div class="form-group">
+                <label>Valor Total (R$)</label>
+                <input id="inputAbastValor" type="number" step="0.01" placeholder="0,00" />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button id="cancelAbastecimentoModal" class="btn-outline-danger">Cancelar</button>
+              <button id="saveAbastecimentoModal" class="btn-primary"><i class="ph ph-floppy-disk"></i> Salvar</button>
             </div>
           </div>
         </div>
@@ -904,80 +1027,6 @@
         </div>
       </div>
 
-      </section>
-
-      <section id="manutencoesPage" class="page">
-        <h1>Manutenções</h1>
-        <input id="searchManutencoes" class="search-input" placeholder="Buscar por veículo ou data" />
-
-        <button id="addManutencaoBtn" type="button">+ Nova Manutenção</button>
-
-        <div id="manutencoesList" class="page-inner"></div>
-
-        <div id="manutencaoForm" class="hidden form-panel">
-          <h3>Cadastrar Manutenção</h3>
-
-          <label>Veículo</label>
-          <select id="inputVeiculoManut">
-            <option value="">Selecione a viatura...</option>
-          </select>
-
-          <label>Data</label>
-          <input id="inputDataManut" type="date" placeholder="Selecione a data" />
-
-          <label>Status</label>
-          <input id="inputStatusManut" placeholder="Status" />
-
-          <div class="form-actions">
-            <button id="saveManutencao" type="button">Salvar</button>
-            <button id="cancelManutencao" type="button">Cancelar</button>
-          </div>
-        </div>
-      </section>
-
-      
-      <section id="abastecimentosPage" class="page">
-        <h1>Abastecimentos</h1>
-        <input id="searchAbastecimentos" class="search-input" placeholder="Buscar por veículo, posto ou data" />
-
-        <button id="addAbastecimentoBtn" type="button">+ Novo Abastecimento</button>
-
-        <div id="abastecimentosList" class="page-inner"></div>
-
-        <div id="abastecimentoForm" class="hidden form-panel">
-          <h3>Cadastrar Abastecimento</h3>
-
-          <label>Veículo</label>
-          <select id="inputVeiculoAbast">
-            <option value="">Selecione a viatura...</option>
-          </select>
-
-          <label>Data</label>
-          <input id="inputDataAbast" type="date" placeholder="Selecione a data" />
-
-          <label for="combustivel">Tipo de Combustível</label>
-          <select id="combustivel" name="combustivel" required>
-            <option value="">Selecione</option>
-            <option value="etanol">Etanol</option>
-            <option value="gasolina">Gasolina</option>
-            <option value="alcool">Álcool</option>
-            <option value="diesel">Diesel</option>
-          </select>
-
-          <label>Nome do Posto</label>
-          <input id="inputPosto" placeholder="Posto de combustível" />
-
-          <label>Litros</label>
-          <input id="inputLitros" type="number" step="0.01" placeholder="Litros" />
-
-          <label>Valor</label>
-          <input id="inputValor" type="number" step="0.01" placeholder="Valor" />
-
-          <div class="form-actions">
-            <button id="saveAbastecimento" type="button">Salvar</button>
-            <button id="cancelAbastecimento" type="button">Cancelar</button>
-          </div>
-        </div>
       </section>
 
       
