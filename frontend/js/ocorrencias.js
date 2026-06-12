@@ -15,10 +15,17 @@ const STATUS_CFG_OC = {
 // Helpers de lookup
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _statusById     = id => (statusCache      || []).find(s => s.id === id) ?? null;
-const _prioridadeById = id => (prioridadesCache || []).find(p => p.id === id) ?? null;
-const _equipeById     = id => (equipesCache     || []).find(e => e.id === id) ?? null;
-const _veiculoById    = id => (veiculosCache    || []).find(v => v.id === id) ?? null;
+window._statusById = id =>
+  (statusCache || []).find(s => s.id === id) ?? null;
+
+window._prioridadeById = id =>
+  (prioridadesCache || []).find(p => p.id === id) ?? null;
+
+window._equipeById = id =>
+  (equipesCache || []).find(e => e.id === id) ?? null;
+
+window._veiculoById = id =>
+  (veiculosCache || []).find(v => v.id === id) ?? null;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carga de dados
@@ -366,7 +373,6 @@ function preencherSelectsOcorrencia() {
 
   preencherSelect("inputOcorrenciaStatus", statusCache ?? [],
     "Selecione o status…", s => s.id, s => s.nome);
-  console.log(ocorrenciaEditandoId)
   const disponiveis = (equipesCache ?? []).filter(e =>
     equipeElegivelParaOcorrencia(e, ocorrenciaEditandoId)
   );

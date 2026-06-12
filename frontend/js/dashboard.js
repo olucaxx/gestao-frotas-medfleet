@@ -5,99 +5,254 @@
 function atualizarProgresso(idBarra, idTexto, porcentagem) {
   const barra = document.getElementById(idBarra);
   const texto = document.getElementById(idTexto);
-  if (barra) barra.style.width = `${porcentagem}%`;
-  if (texto) texto.textContent = `${Math.round(porcentagem)}%`;
+  const valor = Math.min(100, Math.max(0, porcentagem));
+  if (barra) barra.style.width = `${valor}%`;
+  if (texto) texto.textContent = `${Math.round(valor)}%`;
 }
 
-const _dispCod      = id => (disponibilidadesCache || []).find(d => d.id === id)?.codigo ?? "";
-const _statusCod    = id => (statusCache            || []).find(s => s.id === id)?.codigo ?? "";
-const _prioridadeCod = id => (prioridadesCache      || []).find(p => p.id === id)?.codigo ?? "";
+const _statusById = id =>
+  (statusCache || []).find(s => s.id === id) ?? null;
+
+const _statusCod = id =>
+  _statusById(id)?.codigo ?? null;
+
+const _prioridadeById = id =>
+  (prioridadesCache || []).find(p => p.id === id) ?? null;
+
+const _prioridadeCod = id =>
+  _prioridadeById(id)?.codigo ?? null;
+
+const _dispById = id =>
+  (disponibilidadesCache || []).find(d => d.id === id) ?? null;
+
+const _dispCod = id =>
+  _dispById(id)?.codigo ?? null;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Linha do tempo
+// Linha do tempo — unifica todos os caches usando created_at / updated_at
 // ─────────────────────────────────────────────────────────────────────────────
 
-function carregarLinhaTempo() {
-  const linhaTempo = document.getElementById("liveTimeline");
-  if (!linhaTempo) return;
-  linhaTempo.innerHTML = "";
-
-  const eventos = [];
-
-  // ── Ocorrências ────────────────────────────────────────────────────────────
-  ocorrenciasCache.forEach(o => {
-    const sCod = _statusCod(o.status);
-
-    let icone      = "ph-warning-octagon";
-    let classeIcone = "timeline-icon-red";
-    let desc = `Paciente: ${o.nome_paciente ?? "Não informado"} | Local: ${o.local_informado ?? "N/A"}`;
-
-    if (sCod === "EM_ATENDIMENTO") {
-      icone       = "ph-clock";
-      classeIcone = "timeline-icon-blue";
-      desc        = "Equipe médica em atendimento no local.";
-    } else if (sCod === "FINALIZADO") {
-      icone       = "ph-check-circle";
-      classeIcone = "timeline-icon-green";
-      desc        = "Atendimento concluído. Viatura retornando à base.";
-    }
-
-    const horario   = o.horario_chamado ? new Date(o.horario_chamado) : new Date();
-    const diffMin   = Math.max(0, Math.round((Date.now() - horario.getTime()) / 60000));
-    const tempoLabel = diffMin < 60
+function _tempoLabel(timestamp) {
+  const diffMin = Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+  return diffMin < 1
+    ? "agora"
+    : diffMin < 60
       ? `há ${diffMin} min`
       : diffMin < 1440
         ? `há ${Math.round(diffMin / 60)}h`
         : `há ${Math.round(diffMin / 1440)}d`;
+}
 
-    eventos.push({
-      titulo: `Ocorrência: ${o.titulo}`,
-      desc,
-      tempo: tempoLabel,
-      icone,
-      classeIcone,
-      timestamp: horario.getTime()
+function _addEventoCriacaoAtualizacao(eventos, item, { criado, atualizado }) {
+  if (item.created_at) {
+    eventos.push({ ...criado, timestamp: new Date(item.created_at).getTime() });
+  }
+  if (item.updated_at && item.created_at && item.updated_at !== item.created_at) {
+    eventos.push({ ...atualizado, timestamp: new Date(item.updated_at).getTime() });
+  }
+}
+
+async function _buscarLista(caminho) {
+  try {
+    const r = await fazerRequisicao(caminho);
+    if (!r.ok) throw new Error("API falhou");
+    return await r.json();
+  } catch {
+    console.warn(`(Timeline) não foi possível carregar ${caminho}`);
+    return [];
+  }
+}
+
+async function carregarLinhaTempo() {
+  const linhaTempo = document.getElementById("liveTimeline");
+  if (!linhaTempo) return;
+  linhaTempo.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Carregando...</p>`;
+
+  // Listas que não possuem cache global compartilhado
+  const [manutencoesLista, abastecimentosLista] = await Promise.all([
+    _buscarLista("/manutencoes/"),
+    _buscarLista("/abastecimentos/"),
+  ]);
+
+  const eventos = [];
+
+  // ── Ocorrências ─────────────────────────────────────────────────────────
+  (ocorrenciasCache || []).forEach(o => {
+    const sCod = _statusCod(o.status);
+    const statusObj = (statusCache || []).find(s => s.id === o.status);
+    const pac = o.nome_paciente ? ` | Paciente: ${o.nome_paciente}` : "";
+
+    let icone = "ph-pencil-simple";
+    let classeIcone = "timeline-icon-blue";
+    let desc = `Status atualizado para: ${statusObj?.nome ?? "-"}.`;
+
+    if (sCod === "EM_ATENDIMENTO") {
+      icone = "ph-clock";
+      classeIcone = "timeline-icon-blue";
+      desc = "Equipe médica em atendimento no local.";
+    } else if (sCod === "FINALIZADO") {
+      icone = "ph-check-circle";
+      classeIcone = "timeline-icon-green";
+      desc = "Atendimento concluído.";
+    }
+
+    _addEventoCriacaoAtualizacao(eventos, o, {
+      criado: {
+        titulo: `Ocorrência aberta: ${o.titulo}`,
+        desc: `Local: ${o.local_informado ?? "N/A"}${pac}`,
+        icone: "ph-warning-octagon",
+        classeIcone: "timeline-icon-red",
+      },
+      atualizado: {
+        titulo: `Ocorrência: ${o.titulo}`,
+        desc,
+        icone,
+        classeIcone,
+      },
     });
   });
 
-  // ── Funcionários (3 mais recentes) ────────────────────────────────────────
-  funcionariosCache.slice(0, 3).forEach((f, i) => {
-    const dCod  = _dispCod(f.disponibilidade);
-    const disp  = (disponibilidadesCache || []).find(d => d.id === f.disponibilidade);
-    const emRota = dCod === "EM_ROTA";
-
-    eventos.push({
-      titulo:      `Profissional: ${f.nome}`,
-      desc:        `Status atualizado para: ${disp?.nome ?? "Disponível"}.`,
-      tempo:       `há ${15 + i * 18} min`,
-      icone:       emRota ? "ph-navigation-arrow" : "ph-user-check",
-      classeIcone: emRota ? "timeline-icon-blue"  : "timeline-icon-green",
-      timestamp:   Date.now() - (15 + i * 18) * 60000
+  // ── Funcionários ────────────────────────────────────────────────────────
+  (funcionariosCache || []).forEach(f => {
+    _addEventoCriacaoAtualizacao(eventos, f, {
+      criado: {
+        titulo: `Funcionário cadastrado: ${f.nome}`,
+        desc: "Novo funcionário adicionado à frota.",
+        icone: "ph-user-plus",
+        classeIcone: "timeline-icon-green",
+      },
+      atualizado: {
+        titulo: `Funcionário atualizado: ${f.nome}`,
+        desc: "Dados do funcionário foram alterados.",
+        icone: "ph-user-check",
+        classeIcone: "timeline-icon-blue",
+      },
     });
   });
 
-  // ── Veículos (2 mais recentes) ────────────────────────────────────────────
-  veiculosCache.slice(0, 2).forEach((v, i) => {
-    const dCod = _dispCod(v.disponibilidade);
-    const disp = (disponibilidadesCache || []).find(d => d.id === v.disponibilidade);
+  // ── CNHs ────────────────────────────────────────────────────────────────
+  (cnhsCache || []).forEach(c => {
+    const func = (funcionariosCache || []).find(f => f.matricula === c.funcionario);
+    const nome = func?.nome ?? `funcionário #${c.funcionario}`;
 
-    let icone      = "ph-ambulance";
-    let classeIcone = "timeline-icon-green";
-    if      (dCod === "EM_ROTA")       { icone = "ph-navigation-arrow"; classeIcone = "timeline-icon-blue";   }
-    else if (dCod === "INDISPONIVEL")  { icone = "ph-wrench";           classeIcone = "timeline-icon-yellow"; }
-    else if (dCod === "ATENDENDO")     { icone = "ph-first-aid";        classeIcone = "timeline-icon-blue"; }
-
-    eventos.push({
-      titulo:      `Ambulância: ${v.placa}`,
-      desc:        `Viatura (${v.modelo ?? "Padrão"}) | Status: ${disp?.nome ?? "Disponível"}.`,
-      tempo:       `há ${8 + i * 15} min`,
-      icone,
-      classeIcone,
-      timestamp:   Date.now() - (8 + i * 15) * 60000
+    _addEventoCriacaoAtualizacao(eventos, c, {
+      criado: {
+        titulo: `CNH cadastrada: ${nome}`,
+        desc: `Categoria ${c.categoria}.`,
+        icone: "ph-identification-card",
+        classeIcone: "timeline-icon-green",
+      },
+      atualizado: {
+        titulo: `CNH atualizada: ${nome}`,
+        desc: `Categoria ${c.categoria}.`,
+        icone: "ph-identification-card",
+        classeIcone: "timeline-icon-blue",
+      },
     });
+  });
+
+  // ── Registros profissionais ────────────────────────────────────────────
+  (profissionaisSaudeCache || []).forEach(p => {
+    const func = (funcionariosCache || []).find(f => f.matricula === p.funcionario);
+    const nome = func?.nome ?? `funcionário #${p.funcionario}`;
+    const cargo = (cargosCache || []).find(c => c.id === p.cargo);
+
+    _addEventoCriacaoAtualizacao(eventos, p, {
+      criado: {
+        titulo: `Registro profissional cadastrado: ${nome}`,
+        desc: `Cargo: ${cargo?.nome ?? "-"}.`,
+        icone: "ph-certificate",
+        classeIcone: "timeline-icon-green",
+      },
+      atualizado: {
+        titulo: `Registro profissional atualizado: ${nome}`,
+        desc: `Cargo: ${cargo?.nome ?? "-"}.`,
+        icone: "ph-certificate",
+        classeIcone: "timeline-icon-blue",
+      },
+    });
+  });
+
+  // ── Veículos ────────────────────────────────────────────────────────────
+  (veiculosCache || []).forEach(v => {
+    _addEventoCriacaoAtualizacao(eventos, v, {
+      criado: {
+        titulo: `Veículo cadastrado: ${v.placa}`,
+        desc: `${v.marca ?? ""} ${v.modelo ?? ""}`.trim(),
+        icone: "ph-ambulance",
+        classeIcone: "timeline-icon-green",
+      },
+      atualizado: {
+        titulo: `Veículo atualizado: ${v.placa}`,
+        desc: `Disponibilidade: ${(disponibilidadesCache || []).find(d => d.id === v.disponibilidade)?.nome ?? "-"}.`,
+        icone: "ph-ambulance",
+        classeIcone: "timeline-icon-blue",
+      },
+    });
+  });
+
+  // ── Equipes ─────────────────────────────────────────────────────────────
+  (equipesCache || []).forEach(eq => {
+    _addEventoCriacaoAtualizacao(eventos, eq, {
+      criado: {
+        titulo: `Equipe criada: ${eq.nome_equipe}`,
+        desc: "Nova equipe médica formada.",
+        icone: "ph-users-four",
+        classeIcone: "timeline-icon-green",
+      },
+      atualizado: {
+        titulo: `Equipe atualizada: ${eq.nome_equipe}`,
+        desc: "Composição ou status da equipe alterado.",
+        icone: "ph-users-four",
+        classeIcone: "timeline-icon-blue",
+      },
+    });
+  });
+
+  // ── Manutenções ─────────────────────────────────────────────────────────
+  manutencoesLista.forEach(m => {
+    const placa = m.veiculo_placa ?? (_veiculoById(m.veiculo)?.placa ?? `#${m.veiculo}`);
+
+    _addEventoCriacaoAtualizacao(eventos, m, {
+      criado: {
+        titulo: `Manutenção registrada: ${placa}`,
+        desc: m.oficina ? `Oficina: ${m.oficina}.` : "Veículo encaminhado para manutenção.",
+        icone: "ph-wrench",
+        classeIcone: "timeline-icon-yellow",
+      },
+      atualizado: {
+        titulo: `Manutenção finalizada: ${placa}`,
+        desc: "Veículo liberado da manutenção.",
+        icone: "ph-check-circle",
+        classeIcone: "timeline-icon-green",
+      },
+    });
+  });
+
+  // ── Abastecimentos ──────────────────────────────────────────────────────
+  abastecimentosLista.forEach(a => {
+    const placa = a.veiculo_placa ?? (_veiculoById(a.veiculo)?.placa ?? `#${a.veiculo}`);
+
+    if (a.created_at) {
+      eventos.push({
+        titulo: `Abastecimento registrado: ${placa}`,
+        desc: `${Number(a.quantidade_litros).toFixed(2).replace(".", ",")} L de ${a.tipo_combustivel ?? "-"}.`,
+        icone: "ph-gas-pump",
+        classeIcone: "timeline-icon-blue",
+        timestamp: new Date(a.created_at).getTime(),
+      });
+    }
   });
 
   eventos.sort((a, b) => b.timestamp - a.timestamp);
+  eventos.splice(20); // limita quantidade exibida
+
+  linhaTempo.innerHTML = "";
+
+  if (eventos.length === 0) {
+    linhaTempo.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Nenhum evento recente.</p>`;
+    return;
+  }
 
   eventos.forEach(ev => {
     const item = document.createElement("div");
@@ -109,7 +264,7 @@ function carregarLinhaTempo() {
       <div class="timeline-content">
         <div class="timeline-meta">
           <span class="timeline-title">${ev.titulo}</span>
-          <span class="timeline-time">${ev.tempo}</span>
+          <span class="timeline-time">${_tempoLabel(ev.timestamp)}</span>
         </div>
         <p class="timeline-desc">${ev.desc}</p>
       </div>
@@ -128,32 +283,46 @@ async function carregarDashboard() {
     await Promise.all([
       carregarCacheVeiculos(),
       carregarCacheFuncionarios(),
-      typeof carregarCacheOcorrencias      === "function" ? carregarCacheOcorrencias()       : Promise.resolve(),
-      typeof carregarPrioridades           === "function" ? carregarPrioridades()             : Promise.resolve(),
-      typeof carregarStatus                === "function" ? carregarStatus()                  : Promise.resolve(),
-      typeof carregarCacheDisponibilidades === "function" ? carregarCacheDisponibilidades()   : Promise.resolve()
+      typeof carregarCacheOcorrencias        === "function" ? carregarCacheOcorrencias()        : Promise.resolve(),
+      typeof carregarPrioridades             === "function" ? carregarPrioridades()              : Promise.resolve(),
+      typeof carregarStatus                  === "function" ? carregarStatus()                   : Promise.resolve(),
+      typeof carregarCacheDisponibilidades   === "function" ? carregarCacheDisponibilidades()    : Promise.resolve(),
+      typeof carregarCacheEquipes            === "function" ? carregarCacheEquipes()             : Promise.resolve(),
+      typeof carregarCacheCnhs               === "function" ? carregarCacheCnhs()                : Promise.resolve(),
+      typeof carregarCacheProfissionaisSaude === "function" ? carregarCacheProfissionaisSaude()  : Promise.resolve(),
+      typeof carregarCacheCargos             === "function" ? carregarCacheCargos()              : Promise.resolve(),
     ]);
 
-    // ── Ocorrências ────────────────────────────────────────────────────────
+    // ── Ocorrências (somente aguardando contam como "ativas") ──────────────
     const totalOcor  = ocorrenciasCache.length;
-    const ativasOcor = ocorrenciasCache.filter(o => {
-      const cod = _statusCod(o.status);
-      return cod === "AGUARDANDO" || cod === "EM_ATENDIMENTO";
+    const ativasOcor = ocorrenciasCache.filter(o => _statusCod(o.status) === "AGUARDANDO").length;
+
+    // ── Veículos ────────────────────────────────────────────────────────────
+    // Frota ativa total (já filtrada pelo backend: ativo=True)
+    const totalFrotaAtiva = veiculosCache.length;
+
+    // "Total de Veículos": exclui indisponíveis e em manutenção
+    const totalVeic = veiculosCache.filter(v => {
+      const cod = _dispCod(v.disponibilidade);
+      return cod === "DISPONIVEL";
     }).length;
 
-    // ── Veículos ───────────────────────────────────────────────────────────
-    const totalVeic        = veiculosCache.length;
-    const emRotaVeic       = veiculosCache.filter(v => {
+    const emRotaVeic = veiculosCache.filter(v => {
       const cod = _dispCod(v.disponibilidade);
       return cod === "EM_ROTA" || cod === "ATENDENDO";
     }).length;
-    const operacionaisVeic = veiculosCache.filter(v => _dispCod(v.disponibilidade) !== "INDISPONIVEL").length;
 
-    // ── Funcionários ───────────────────────────────────────────────────────
+    const operacionaisVeic = veiculosCache.filter(v => {
+      const cod = _dispCod(v.disponibilidade);
+      console.log(v.placa, cod);
+      return cod === "DISPONIVEL";
+    }).length;
+
+    // ── Funcionários ─────────────────────────────────────────────────────────
     const totalFunc       = funcionariosCache.length;
     const disponiveisFunc = funcionariosCache.filter(f => _dispCod(f.disponibilidade) === "DISPONIVEL").length;
 
-    // ── Contadores ─────────────────────────────────────────────────────────
+    // ── Contadores ───────────────────────────────────────────────────────────
     const el = id => document.getElementById(id);
     if (el("totalOcorrencias")) el("totalOcorrencias").textContent = ativasOcor;
     if (el("viaturasRota"))     el("viaturasRota").textContent     = emRotaVeic;
@@ -161,18 +330,24 @@ async function carregarDashboard() {
     if (el("totalViaturas"))    el("totalViaturas").textContent     = totalVeic;
 
     // ── Barras de progresso (com delay para a animação CSS funcionar) ──────
+    // Todas usam a frota/efetivo ativo total como denominador, evitando >100%.
     setTimeout(() => {
       atualizarProgresso("progressOcorrencias", "progressTextOcorrencias",
-        totalOcor > 0  ? (ativasOcor        / totalOcor)  * 100 : 0);
-      atualizarProgresso("progressRota",        "progressTextRota",
-        totalVeic > 0  ? (emRotaVeic        / totalVeic)  * 100 : 0);
-      atualizarProgresso("progressEquipe",      "progressTextEquipe",
-        totalFunc > 0  ? (disponiveisFunc   / totalFunc)  * 100 : 0);
-      atualizarProgresso("progressFrota",       "progressTextFrota",
-        totalVeic > 0  ? (operacionaisVeic  / totalVeic)  * 100 : 0);
+        totalOcor > 0 ? (ativasOcor / totalOcor) * 100 : 0);
+
+      atualizarProgresso("progressRota", "progressTextRota",
+        totalFrotaAtiva > 0 ? (emRotaVeic / totalFrotaAtiva) * 100 : 0);
+
+      atualizarProgresso("progressEquipe", "progressTextEquipe",
+        totalFunc > 0 ? (disponiveisFunc / totalFunc) * 100 : 0);
+
+      atualizarProgresso("progressFrota", "progressTextFrota",
+        totalFrotaAtiva > 0 ? (operacionaisVeic / totalFrotaAtiva) * 100 : 0);
+
+        console.log(operacionaisVeic, totalFrotaAtiva);
     }, 100);
 
-    // ── Alertas críticos ───────────────────────────────────────────────────
+    // ── Alertas críticos ─────────────────────────────────────────────────────
     const alertList = el("alertList");
     if (alertList) {
       const alertas = [];
@@ -180,7 +355,6 @@ async function carregarDashboard() {
       ocorrenciasCache.forEach(o => {
         const sCod   = _statusCod(o.status);
         const pCod   = _prioridadeCod(o.prioridade);
-        const pNome  = (prioridadesCache || []).find(p => p.id === o.prioridade)?.nome ?? "";
         const ativa  = sCod === "AGUARDANDO" || sCod === "EM_ATENDIMENTO";
         const pac    = o.nome_paciente ? ` — ${o.nome_paciente}` : "";
         const nav    = `mostrarPagina('ocorrenciasPage');selecionarOcorrencia(${o.id});`;
@@ -227,7 +401,7 @@ async function carregarDashboard() {
       alertList.innerHTML = alertas.join("");
     }
 
-    carregarLinhaTempo();
+    await carregarLinhaTempo();
 
   } catch (erro) {
     console.error("Erro ao carregar o dashboard:", erro);

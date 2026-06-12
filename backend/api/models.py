@@ -49,6 +49,8 @@ class Veiculo(models.Model):
     )
 
     ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.placa
@@ -91,6 +93,8 @@ class Funcionario(models.Model):
     )
 
     ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.nome
@@ -142,6 +146,8 @@ class CNH(models.Model):
     validade = models.DateField()
 
     ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return f"{self.funcionario.nome} - {self.numero}"
@@ -156,6 +162,9 @@ class ProfissionalSaude(models.Model):
 
     cargo = models.ForeignKey(Cargo, on_delete=PROTECT)
     numero_registro = models.CharField(max_length=30, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.funcionario.nome
@@ -178,6 +187,8 @@ class Equipe(models.Model):
     disponibilidade = models.ForeignKey(Disponibilidade, on_delete=PROTECT)
 
     ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return self.nome_equipe
@@ -320,6 +331,8 @@ class Manutencao(models.Model):
     )
 
     ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return f"Manutenção - {self.veiculo.placa} - {self.get_status_display()} ({self.id})"
@@ -337,6 +350,8 @@ class Abastecimento(models.Model):
     tipo_combustivel = models.CharField(max_length=50)
 
     ativo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
 
     def __str__(self):
         return f"Abastecimento - {self.veiculo.placa} - {self.data} ({self.id})"
