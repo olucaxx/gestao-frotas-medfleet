@@ -249,7 +249,7 @@ function funcionarioElegivelParaEquipe(funcionario, equipeEditandoId = null) {
 
 function veiculoElegivelParaEquipe(veiculo, equipeEditandoId = null) {
   if (!veiculo) return false;
-  const equipeAtual = numId(veiculo.equipe_atribuidae2);
+  const equipeAtual = numId(veiculo.equipe_atribuida);
   if (equipeEditandoId && equipeAtual === numId(equipeEditandoId)) return true;
   if (equipeAtual !== null) return false;
   return getDispCodigo(veiculo.disponibilidade) === COD_DISPONIVEL;
