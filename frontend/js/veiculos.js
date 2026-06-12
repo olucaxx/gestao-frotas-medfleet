@@ -24,6 +24,17 @@ function _veiculoEmManutencao(veiculo) {
   return dispCod === "EM_MANUTENCAO";
 }
 
+function _imagemPorCategoria(categoria) {
+  const map = {
+    AMBULANCIA: "https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/outline/ambulance.svg",
+    UTI_MOVEL: "https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/outline/ambulance.svg",
+    RESGATE: "https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/outline/medical-cross.svg",
+    APOIO: "https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/outline/car.svg",
+  };
+
+  return map[(categoria || "").toUpperCase()] ??
+         "https://raw.githubusercontent.com/tabler/tabler-icons/master/icons/outline/ambulance.svg";
+}
 // ─── Cache de disponibilidades ───────────────────────────────────────────────
 
 async function carregarCacheDisponibilidades() {
@@ -83,6 +94,15 @@ async function carregarVeiculos() {
     const dispCod = statusAtual?.codigo ?? "";
     const badgeEquipe = v.equipe_nome ? renderBadgeEquipeHtml(v.equipe_nome) : "";
 
+    const categoriaLabel = {
+      AMBULANCIA: "Ambulância",
+      UTI_MOVEL:  "UTI Móvel",
+      RESGATE:    "Resgate",
+      APOIO:      "Apoio",
+    }[(v.categoria || "").toUpperCase()] ?? (v.categoria || "-");
+
+    const imagem = _imagemPorCategoria(v.categoria);
+
     cartao.innerHTML = `
       <div class="tc-header">
         <h3>${v.placa}</h3>
@@ -90,11 +110,27 @@ async function carregarVeiculos() {
           <i class="ph ${iconeBadgePorCodigo(dispCod)}"></i> ${statusAtual?.nome ?? "-"}
         </span>
       </div>
-      <div style="font-size:12px;color:var(--text-muted);margin:6px 0;display:flex;flex-wrap:wrap;gap:6px;">
+      <div style="font-size:12px;color:var(--text-muted);margin:4px 0 2px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+        <span>${categoriaLabel} &nbsp;|&nbsp; CNH ${v.cnh_necessaria || "-"}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+        ${v.marca || ""} ${v.modelo || ""}
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;display:flex;flex-wrap:wrap;gap:6px;">
         ${badgeEquipe}
       </div>
-      <div class="tc-image">
-        <img src="assets/ambulance.png" alt="Ambulância" />
+      <div class="tc-image" style="display: flex; justify-content: center; align-items: center; padding: 1rem 0;">
+        <div
+          style="
+            width: 80px;
+            aspect-ratio: 1;
+            background-color: var(--text-muted);
+            mask: url('${imagem}') no-repeat center;
+            -webkit-mask: url('${imagem}') no-repeat center;
+            mask-size: contain;
+            -webkit-mask-size: contain;
+          ">
+        </div>
       </div>
     `;
 
@@ -141,6 +177,10 @@ function selecionarVeiculo(placa, statusAtual) {
 
   if (el("detailVeiculoEquipe"))
     el("detailVeiculoEquipe").textContent = v.equipe_nome || "Sem equipe";
+
+  // Atualiza imagem do detalhe conforme categoria
+  const imgDetalhe = document.querySelector("#infoVeiculo .large-vehicle-image img");
+  if (imgDetalhe) imgDetalhe.src = `assets/${_imagemPorCategoria(v.categoria)}`;
 
   if (el("btnEditVeiculo"))    el("btnEditVeiculo").onclick    = () => editarVeiculo(v.placa);
   if (el("btnDeleteVeiculo"))  el("btnDeleteVeiculo").onclick  = () => {
@@ -287,7 +327,6 @@ function abrirManutencaoModal() {
   const placa = veiculoSelecionadoPlaca;
   if (!placa) return mostrarToast("Selecione um veículo primeiro.", "warning");
 
-  // Limpa os campos
   ["inputManutData", "inputManutCusto", "inputManutOficina", "inputManutDescricao"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
@@ -333,11 +372,9 @@ async function salvarManutencao() {
     document.getElementById("manutencaoModal")?.classList.add("hidden");
     mostrarToast("Manutenção registrada! Veículo marcado como Em Manutenção.", "success");
 
-    // Recarrega veículos e manutenções
     await carregarCacheVeiculos();
     await carregarVeiculos();
 
-    // Re-seleciona o veículo e vai para aba de manutenção
     const vAtualizado = veiculosCache.find(v => v.placa === placa);
     const dispAtual   = disponibilidadesCache.find(d => d.id === vAtualizado?.disponibilidade);
     selecionarVeiculo(placa, dispAtual);
@@ -371,7 +408,6 @@ async function finalizarManutencao(manutencaoId) {
     const vAtualizado = veiculosCache.find(v => v.placa === placa);
     const dispAtual   = disponibilidadesCache.find(d => d.id === vAtualizado?.disponibilidade);
 
-    // Atualiza a lista lateral sem fechar o painel de detalhes
     _atualizarCartaoLista(placa, dispAtual);
     selecionarVeiculo(placa, dispAtual);
     _ativarAba("manutencaoVeiculo");
@@ -669,11 +705,9 @@ async function deletarVeiculo(placa) {
 // Bindings dos modais de manutenção e abastecimento
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// Botões "Nova Manutenção" e "Novo Abastecimento" nas abas
 document.getElementById("btnAddManutencao")?.addEventListener("click", abrirManutencaoModal);
 document.getElementById("btnAddAbastecimento")?.addEventListener("click", abrirAbastecimentoModal);
 
-// Modal de manutenção
 document.getElementById("saveManutencaoModal")?.addEventListener("click", salvarManutencao);
 document.getElementById("cancelManutencaoModal")?.addEventListener("click", () => {
   document.getElementById("manutencaoModal")?.classList.add("hidden");
@@ -682,7 +716,6 @@ document.getElementById("closeManutencaoModal")?.addEventListener("click", () =>
   document.getElementById("manutencaoModal")?.classList.add("hidden");
 });
 
-// Modal de abastecimento
 document.getElementById("saveAbastecimentoModal")?.addEventListener("click", salvarAbastecimento);
 document.getElementById("cancelAbastecimentoModal")?.addEventListener("click", () => {
   document.getElementById("abastecimentoModal")?.classList.add("hidden");
@@ -710,9 +743,8 @@ function _atualizarCartaoLista(placa, dispAtual) {
   }
 }
 
-// Funções legadas de manutenção (podem ser removidas — mantidas por compatibilidade)
-async function carregarManutencoes() { /* noop — gerenciado por veículo */ }
-async function carregarAbastecimentos() { /* noop — gerenciado por veículo */ }
+async function carregarManutencoes() { /* noop */ }
+async function carregarAbastecimentos() { /* noop */ }
 
 // ─── Exports globais ─────────────────────────────────────────────────────────
 window.carregarCacheVeiculos      = carregarCacheVeiculos;

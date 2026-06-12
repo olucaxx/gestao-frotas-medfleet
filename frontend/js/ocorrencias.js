@@ -157,9 +157,6 @@ function selecionarOcorrencia(id) {
   if (el("detailOcorrenciaPacienteNome"))
     el("detailOcorrenciaPacienteNome").textContent = o.nome_paciente ?? "-";
 
-  if (el("detailOcorrenciaPacienteTelefone"))
-    el("detailOcorrenciaPacienteTelefone").textContent = o.telefone_paciente ?? "-";
-
   if (el("detailOcorrenciaEndereco"))
     el("detailOcorrenciaEndereco").textContent = o.local_informado ?? "-";
 
@@ -212,7 +209,6 @@ function _atualizarBotaoStatus(btn, id, statusCod, ocorrencia) {
 
   if (statusCod === "AGUARDANDO") {
     const semEquipe = !ocorrencia?.equipe;
-    console.log(semEquipe)
     btn.innerHTML = '<i class="ph ph-play"></i> Iniciar Atendimento';
     btn.className = "btn-outline-primary";
     btn.disabled  = semEquipe;
@@ -370,11 +366,11 @@ function preencherSelectsOcorrencia() {
 
   preencherSelect("inputOcorrenciaStatus", statusCache ?? [],
     "Selecione o status…", s => s.id, s => s.nome);
-
+  console.log(ocorrenciaEditandoId)
   const disponiveis = (equipesCache ?? []).filter(e =>
     equipeElegivelParaOcorrencia(e, ocorrenciaEditandoId)
   );
-
+  console.log(disponiveis)
   preencherSelect("inputOcorrenciaEquipe", disponiveis,
     "Sem equipe (atribuir depois)…", e => e.id, e => e.nome_equipe);
 }
@@ -424,6 +420,8 @@ function limparFormularioOcorrencia() {
 }
 
 function editarOcorrencia(id) {
+  ocorrenciaEditandoId = id;
+  preencherSelectsOcorrencia()
   const o = ocorrenciasCache.find(oc => oc.id === id);
   if (!o) return;
 
@@ -438,7 +436,7 @@ function editarOcorrencia(id) {
   set("inputOcorrenciaDescricao", o.observacoes);
   set("inputOcorrenciaPrioridade", o.prioridade);
   set("inputOcorrenciaStatus",    o.status);
-  set("inputOcorrenciaEquipe",    o.equipe ?? "");
+  set("inputOcorrenciaEquipe",    o.equipe);
 
   // Converter UTC → local para o input datetime-local
   if (o.horario_chamado) {
@@ -454,7 +452,7 @@ function editarOcorrencia(id) {
   const equipeJaSet    = !!o.equipe;
   const naoAguardando  = status?.codigo !== "AGUARDANDO";
   const selectEquipe   = document.getElementById("inputOcorrenciaEquipe");
-  if (selectEquipe) selectEquipe.disabled = equipeJaSet || naoAguardando;
+  if (selectEquipe) selectEquipe.disabled = naoAguardando;
 
   ocorrenciaEditandoId = id;
   const btnSave = document.getElementById("saveOcorrencia");

@@ -1,8 +1,0 @@
-campo para telefone do paciente
-
-conseguir remover os funcionarios e veiculo da equipe
-se deletar, falar na equioe que ele ta deletado
-    adicionar disponibilidade INDISPONIVEL para ela
-    retornar algo como "VEICULO INATIVO" no lugar do nome do veiculo
-    nao conseguir fazer nada com ela no INDISPONIVEL
-    muita coisa na real pensar com cuidado

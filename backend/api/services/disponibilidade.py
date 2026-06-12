@@ -25,13 +25,7 @@ def _get_disp(codigo):
 def sincronizar_membros_equipe(equipe):
     """Propaga a disponibilidade da equipe para funcionários e veículo vinculados."""
     codigo_equipe = equipe.disponibilidade.codigo
-
-    if codigo_equipe == COD_DISPONIVEL:
-        disp_membros = _get_disp(COD_DISPONIVEL)
-    elif codigo_equipe in (COD_ATENDENDO, COD_EM_ROTA):
-        disp_membros = _get_disp(COD_INDISPONIVEL)
-    else:
-        disp_membros = _get_disp(COD_INDISPONIVEL)
+    disp_membros = _get_disp(codigo_equipe)
 
     Funcionario.objects.filter(equipe_atribuida=equipe).update(
         disponibilidade=disp_membros
@@ -59,6 +53,16 @@ def vincular_membros_equipe(equipe, profissionais, veiculo, condutor):
 
     condutor.equipe_atribuida = equipe
     condutor.save(update_fields=["equipe_atribuida"])
+
+    Veiculo.objects.filter(
+        equipe_atribuida=equipe
+    ).exclude(pk=veiculo.pk).update(equipe_atribuida=None)
+
+    Veiculo.objects.filter(
+        pk=veiculo.pk
+    ).exclude(
+        equipe_atribuida=equipe
+    ).update(equipe_atribuida=None)
 
     veiculo.equipe_atribuida = equipe
     veiculo.save(update_fields=["equipe_atribuida"])

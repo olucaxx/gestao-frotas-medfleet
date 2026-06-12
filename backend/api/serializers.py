@@ -253,10 +253,16 @@ class EquipeSerializer(serializers.ModelSerializer):
         novos_profissionais = validated_data.pop('profissionais', None)
         validated_data.pop('disponibilidade', None)
 
+        veiculo_antigo = instance.veiculo
+
         condutor = validated_data.get('condutor', instance.condutor)
         veiculo = validated_data.get('veiculo', instance.veiculo)
 
         equipe = super().update(instance, validated_data)
+
+        if veiculo_antigo != veiculo:
+            veiculo_antigo.equipe = None
+            veiculo_antigo.save()
 
         if novos_profissionais is not None:
             equipe.profissionais.set(novos_profissionais)
@@ -316,12 +322,6 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
             if not ok:
                 raise serializers.ValidationError(msg)
 
-        if nova_equipe and instance:
-            if instance.equipe and nova_equipe != instance.equipe:
-                raise serializers.ValidationError(
-                    "nao pode trocar equipe"
-                )
-
         if nova_equipe and (not instance or not instance.equipe):
             ok, msg = disp_svc.equipe_disponivel_para_ocorrencia(
                 nova_equipe,
@@ -355,11 +355,6 @@ class OcorrenciaSerializer(serializers.ModelSerializer):
         if instance.status.codigo == "FINALIZADO":
             raise serializers.ValidationError(
                 "ocorrencia finalizada nao pode ser alterada"
-            )
-
-        if instance.equipe and nova_equipe != instance.equipe:
-            raise serializers.ValidationError(
-                "nao pode trocar equipe"
             )
 
         atribuindo_equipe = (
